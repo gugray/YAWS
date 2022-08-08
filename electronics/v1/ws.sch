@@ -473,18 +473,10 @@ Text GLabel 5300 2300 0    50   Input ~ 0
 D7
 Text GLabel 1600 3950 2    50   Input ~ 0
 D5
-Text GLabel 5300 2400 0    50   Input ~ 0
-D5
-Text GLabel 5300 3100 0    50   Input ~ 0
-D0
 Text GLabel 1600 3450 2    50   Input ~ 0
 D0
 Text GLabel 1600 4250 2    50   Input ~ 0
 D8
-Text GLabel 5300 2800 0    50   Input ~ 0
-D8
-Text GLabel 5300 2700 0    50   Input ~ 0
-D3
 Text GLabel 1600 3750 2    50   Input ~ 0
 D3
 Text GLabel 5700 1900 0    50   Input ~ 0
@@ -720,4 +712,12 @@ Wire Wire Line
 Connection ~ 8100 1450
 Wire Wire Line
 	8100 1450 8100 1150
+Text GLabel 5300 2700 0    50   Input ~ 0
+D3
+Text GLabel 5300 2800 0    50   Input ~ 0
+D8
+Text GLabel 5300 3100 0    50   Input ~ 0
+D0
+Text GLabel 5300 2400 0    50   Input ~ 0
+D5
 $EndSCHEMATC
