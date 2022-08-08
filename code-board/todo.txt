@@ -1,0 +1,25 @@
+Initial proof-of-concepts
+-- Control MOSFET over TX
+-- Read switch over RX
+-- Over-the-air update
+-- Talk to BME280E
+-- Read light
+
+Verify once parts are there
+-- Make display work
+-- Receive 433MHz (inverted pin!)
+-- Control backlight
+
+More to order:
+-- Resistors
+-- 12V power socket
+
+Dev while PCB manufactured:
+-- Station UI and logic loop
+-- WiFi access point server
+-- WiFi client server; update from URL
+
+When PCB there:
+-- Build electronics
+-- Design and cut layered plexi frame
+
