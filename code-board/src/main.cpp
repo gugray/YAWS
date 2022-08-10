@@ -4,7 +4,10 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
+#include <RH_ASK.h>
 #include "canvas.h"
+
+// https://wolles-elektronikkiste.de/433-mhz-funk-mit-dem-arduino
 
 const char *fnFirmware = "firmware.bin";
 const char *wifiNetwork = "Cirrus";
@@ -14,10 +17,14 @@ const char *fileUrl = "https://zydeo.net/firmware.bin";
 
 #define LED_PIN LED_BUILTIN
 
+#define RADIO_RX_PIN D6
+#define RADIO_TX_PIN D4 // Not used; we're only receiving
+
 #define DOG_CS_PIN D8
 #define DOG_A0_PIN D3
 #define DOG_RESET_PIN D0
 
+RH_ASK radio(2000, RADIO_RX_PIN, RADIO_TX_PIN);
 DOG7565R dog;
 Canvas canvas;
 BearSSL::WiFiClientSecure secureBearClient;
@@ -98,12 +105,8 @@ size_t downloadFile(const char *url, const char *fn)
   return sz;
 }
 
-void setup()
+void doWifiStuff()
 {
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, HIGH);
-  delay(500);
-
   Serial.begin(9600);
   Serial.printf("Hello, world.\n");
 
@@ -146,23 +149,66 @@ void setup()
   //   Serial.printf(buf);
   // }
   // f.close();
+}
 
+void setup()
+{
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);
+  delay(500);
+
+  Serial.begin(115200);
+  Serial.printf("The UNIT sez Hi.\n");
+
+  // Set up PWM for brightness
   // analogWriteRange(1023);
   // analogWriteFreq(880);
+  // pinMode(TX, OUTPUT);
+  // analogWrite(TX, 512);
+
   dog.initialize(DOG_CS_PIN, DOG_A0_PIN, DOG_RESET_PIN, DOGM128);
   canvas.clear();
   canvas.line(5, 5, 122, 5);
-  canvas.fwText(20, 7, "Hello world!");
+  canvas.fwText(20, 7, "Hello, world!");
   flushCanvasToDisplay();
+
+  // This must come AFTER dog.initialize()
+  // DOG uses SPI, which sets MISO pin as input
+  // But we're hijacking it here for ourselves; no MISO needed by the dog
+  radio.init();
+  radio.setModeRx();
 
   digitalWrite(LED_PIN, LOW);
   delay(500);
 }
 
+int16_t count = 0;
+const uint8_t radioBufSize = 128;
+uint8_t radioBuf[radioBufSize];
+
 void loop()
 {
-  digitalWrite(LED_PIN, HIGH);
-  delay(500);
-  digitalWrite(LED_PIN, LOW);
-  delay(500);
+  // Control brightness
+  // float val = 1023.0F * (sin(cnt) + 1) / 2;
+  // analogWrite(TX, (int16_t)val);
+  // cnt += 0.01;
+  // if (cnt > 2 * PI)
+  //   cnt -= 2 * PI;
+  // delay(10);
+
+  // Receive radio
+  // uint8_t len = radioBufSize;
+  // if (radio.recv(radioBuf, &len))
+  // {
+  //   Serial.printf("Messge %d received: '", count);
+  //   for (uint8_t i = 0; i < len; ++i)
+  //     Serial.print(radioBuf[i]);
+  //   Serial.printf("'\n");
+  //   ++count;
+  // }
+
+  // digitalWrite(LED_PIN, HIGH);
+  // delay(500);
+  // digitalWrite(LED_PIN, LOW);
+  // delay(500);
 }

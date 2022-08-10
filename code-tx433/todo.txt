@@ -1,17 +1,17 @@
 Initial proof-of-concepts
 OK Control MOSFET over TX
 -- Read switch over RX
-OK Over-the-air update
+-- Over-the-air update
 -- Talk to BME280E
 -- Read light
 OK Make display work
 
 Verify once parts are there
-OK Receive 433MHz (inverted pin!)
-OK Control backlight
--- 5V voltage regulator
+-- Receive 433MHz (inverted pin!)
+-- Control backlight
 
 More to order:
+-- Resistors
 -- 12V power socket
 
 Dev while PCB manufactured:
