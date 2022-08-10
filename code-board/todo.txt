@@ -2,8 +2,8 @@ Initial proof-of-concepts
 OK Control MOSFET over TX
 -- Read switch over RX
 OK Over-the-air update
--- Talk to BME280E
--- Read light
+OK Talk to BME280E
+OK Read light
 OK Make display work
 
 Verify once parts are there
@@ -12,7 +12,7 @@ OK Control backlight
 -- 5V voltage regulator
 
 More to order:
--- 12V power socket
+OK 12V power socket
 
 Dev while PCB manufactured:
 -- Station UI and logic loop

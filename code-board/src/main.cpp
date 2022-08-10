@@ -5,6 +5,7 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
 #include <RH_ASK.h>
+#include <Adafruit_BME280.h>
 #include "canvas.h"
 
 // https://wolles-elektronikkiste.de/433-mhz-funk-mit-dem-arduino
@@ -14,17 +15,21 @@ const char *wifiNetwork = "Cirrus";
 const char *wifiPassword = "brouhaha";
 const uint32_t wifiConnectTimeout = 10000;
 const char *fileUrl = "https://zydeo.net/firmware.bin";
+const float altitude = 55.0F;
 
 #define LED_PIN LED_BUILTIN
 
 #define RADIO_RX_PIN D6
 #define RADIO_TX_PIN D4 // Not used; we're only receiving
 
+#define BRIGHTNESS_PIN A0
+
 #define DOG_CS_PIN D8
 #define DOG_A0_PIN D3
 #define DOG_RESET_PIN D0
 
 RH_ASK radio(2000, RADIO_RX_PIN, RADIO_TX_PIN);
+Adafruit_BME280 bme;
 DOG7565R dog;
 Canvas canvas;
 BearSSL::WiFiClientSecure secureBearClient;
@@ -160,6 +165,8 @@ void setup()
   Serial.begin(115200);
   Serial.printf("The UNIT sez Hi.\n");
 
+  pinMode(BRIGHTNESS_PIN, INPUT);
+
   // Set up PWM for brightness
   // analogWriteRange(1023);
   // analogWriteFreq(880);
@@ -177,6 +184,13 @@ void setup()
   // But we're hijacking it here for ourselves; no MISO needed by the dog
   radio.init();
   radio.setModeRx();
+
+  bool bmeOk = bme.begin(0x76);
+  if (!bmeOk)
+  {
+    canvas.fwText(20, 0, "NO BME!!");
+    flushCanvasToDisplay();
+  }
 
   digitalWrite(LED_PIN, LOW);
   delay(500);
@@ -207,8 +221,23 @@ void loop()
   //   ++count;
   // }
 
-  // digitalWrite(LED_PIN, HIGH);
-  // delay(500);
-  // digitalWrite(LED_PIN, LOW);
-  // delay(500);
+  digitalWrite(LED_PIN, HIGH);
+  delay(500);
+  digitalWrite(LED_PIN, LOW);
+  delay(500);
+
+  canvas.clear();
+
+  int16_t brightness = analogRead(BRIGHTNESS_PIN);
+  sprintf(buf, "Light: %4d", brightness);
+  canvas.fwText(20, 5, buf);
+
+  float temp = bme.readTemperature();
+  float humi = bme.readHumidity();
+  float pres = bme.readPressure();
+  pres = pres / pow((1 - altitude / 44330), 5.255) / 100;
+  sprintf(buf, "%5.1fC %d%% %4.0f hPa", temp, (uint16_t)round(humi), pres);
+  canvas.fwText(0, 6, buf);
+
+  flushCanvasToDisplay();
 }
