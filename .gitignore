@@ -1,3 +1,9 @@
+work
+
+hu-test.json
+hu-train.json
+
+# MacOS
 .DS_Store
 
 # KiCad
@@ -7,3 +13,6 @@ fp-info-cache
 # C#
 bin
 obj
+
+# Node
+node_modules
