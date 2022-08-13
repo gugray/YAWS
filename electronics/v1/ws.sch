@@ -349,7 +349,7 @@ U 1 1 63023090
 P 1600 1750
 F 0 "C2" H 1718 1796 50  0000 L CNN
 F 1 "1000uF" H 1718 1705 50  0000 L CNN
-F 2 "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm" H 1638 1600 50  0001 C CNN
+F 2 "CustomParts:CP_Radial_D10.0mm_L18mm_P5.0mm_Lying" H 1638 1600 50  0001 C CNN
 F 3 "~" H 1600 1750 50  0001 C CNN
 	1    1600 1750
 	1    0    0    -1  
@@ -366,57 +366,21 @@ F 3 "https://wiki.wemos.cc/products:d1:d1_mini#documentation" H -650 2700 50  00
 	1    1200 3850
 	1    0    0    -1  
 $EndComp
-$Comp
-L Device:Solar_Cell SC1
-U 1 1 62F0A31C
-P 4450 1550
-F 0 "SC1" H 4282 1646 50  0000 R CNN
-F 1 "Solar_Cell" H 4282 1555 50  0000 R CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" V 4450 1610 50  0001 C CNN
-F 3 "~" V 4450 1610 50  0001 C CNN
-	1    4450 1550
-	-1   0    0    -1  
-$EndComp
 Text GLabel 3900 1800 0    50   Input ~ 0
 GND
 Text GLabel 3900 1500 0    50   Input ~ 0
 A0
 $Comp
-L Device:R R3
-U 1 1 62F1F5D9
-P 4150 1350
-F 0 "R3" H 4220 1396 50  0000 L CNN
-F 1 "10k" H 4220 1305 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 4080 1350 50  0001 C CNN
-F 3 "~" H 4150 1350 50  0001 C CNN
-	1    4150 1350
-	-1   0    0    -1  
-$EndComp
-$Comp
 L Device:R R4
 U 1 1 62F2A697
-P 4150 1650
-F 0 "R4" H 4220 1696 50  0000 L CNN
-F 1 "10k" H 4220 1605 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 4080 1650 50  0001 C CNN
-F 3 "~" H 4150 1650 50  0001 C CNN
-	1    4150 1650
+P 4400 1650
+F 0 "R4" H 4470 1696 50  0000 L CNN
+F 1 "5k" H 4470 1605 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 4330 1650 50  0001 C CNN
+F 3 "~" H 4400 1650 50  0001 C CNN
+	1    4400 1650
 	-1   0    0    -1  
 $EndComp
-Wire Wire Line
-	3900 1500 4150 1500
-Connection ~ 4150 1500
-Wire Wire Line
-	4150 1200 4450 1200
-Wire Wire Line
-	4450 1200 4450 1350
-Wire Wire Line
-	3900 1800 4150 1800
-Wire Wire Line
-	4150 1800 4450 1800
-Wire Wire Line
-	4450 1800 4450 1650
-Connection ~ 4150 1800
 Text GLabel 1600 3350 2    50   Input ~ 0
 A0
 Text GLabel 1600 3550 2    50   Input ~ 0
@@ -661,4 +625,24 @@ Wire Wire Line
 	2850 2700 3400 2700
 Wire Wire Line
 	2850 2700 2850 3150
+$Comp
+L Device:R_PHOTO R3
+U 1 1 62F6C18F
+P 4400 1350
+F 0 "R3" H 4600 1400 50  0000 R CNN
+F 1 "GL5516" H 4750 1300 50  0000 R CNN
+F 2 "OptoDevice:R_LDR_5.1x4.3mm_P3.4mm_Vertical" V 4450 1100 50  0001 L CNN
+F 3 "~" H 4400 1300 50  0001 C CNN
+	1    4400 1350
+	-1   0    0    -1  
+$EndComp
+Connection ~ 4400 1500
+Text GLabel 3900 1200 0    50   Input ~ 0
+3V3
+Wire Wire Line
+	3900 1200 4400 1200
+Wire Wire Line
+	3900 1500 4400 1500
+Wire Wire Line
+	3900 1800 4400 1800
 $EndSCHEMATC
