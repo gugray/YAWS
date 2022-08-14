@@ -159,7 +159,7 @@ void doWifiStuff()
 void setup()
 {
   pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, HIGH);
+  digitalWrite(LED_PIN, LOW);
   delay(500);
 
   Serial.begin(115200);
@@ -192,7 +192,7 @@ void setup()
     flushCanvasToDisplay();
   }
 
-  digitalWrite(LED_PIN, LOW);
+  digitalWrite(LED_PIN, HIGH);
   delay(500);
 }
 
@@ -221,10 +221,10 @@ void loop()
   //   ++count;
   // }
 
-  digitalWrite(LED_PIN, HIGH);
-  delay(500);
-  digitalWrite(LED_PIN, LOW);
-  delay(500);
+  // digitalWrite(LED_PIN, HIGH);
+  // delay(500);
+  // digitalWrite(LED_PIN, LOW);
+  // delay(500);
 
   canvas.clear();
 
@@ -240,4 +240,6 @@ void loop()
   canvas.fwText(0, 6, buf);
 
   flushCanvasToDisplay();
+
+  delay(500);
 }
