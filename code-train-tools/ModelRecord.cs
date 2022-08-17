@@ -29,10 +29,27 @@ class ModelInput
     public float Temp0;
 }
 
+enum Category
+{
+    Clear,
+    FewCloudsDry,
+    FewCloudsLittlePrecip,
+    ManyCloudsDry,
+    ManyCloudsLittlePrecip,
+    ManyCloudsMediumPrecip,
+    OvercastDry,
+    OvercastLittlePrecip,
+    OvercastMediumPrecip,
+    OvercastHeavyPrecip,
+    ExtremePrecip,
+}
+
 class ModelOutput
 {
     public string Precip;
     public string Cloud;
+    public string Category;
+    public float PrecipMM;
 }
 
 class ModelRecord

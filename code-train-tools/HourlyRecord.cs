@@ -33,6 +33,8 @@ class HourlyRecord
     /// </summary>
     public int Cloud;
 
+    public int OrigWeatherCode;
+
     public override string ToString()
     {
         string res = Time.Year.ToString("D4") + "-" + Time.Month.ToString("D2") + "-" + Time.Day.ToString("D2") +
@@ -42,6 +44,7 @@ class HourlyRecord
         res += '\t' + Pres.ToString("0.0");
         res += '\t' + RelHum.ToString();
         res += '\t' + Cloud.ToString();
+        res += '\t' + OrigWeatherCode.ToString();
         return res;
     }
 
@@ -60,6 +63,7 @@ class HourlyRecord
         rec.Pres = float.Parse(parts[3]);
         rec.RelHum = int.Parse(parts[4]);
         rec.Cloud = int.Parse(parts[5]);
+        rec.OrigWeatherCode = int.Parse(parts[6]);
         return rec;
     }
 }

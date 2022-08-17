@@ -46,6 +46,7 @@ partial class Program
             rec.Pres = float.Parse(parts[36]);
             rec.RelHum = (int)Math.Round(float.Parse(parts[16]));
             rec.Cloud = convertHuCloud(int.Parse(parts[34]));
+            rec.OrigWeatherCode = int.Parse(parts[34]);
 
             if (rec.Precip == -999) continue;
             if (rec.Temp == -999) continue;
@@ -72,7 +73,7 @@ partial class Program
         else if (val == 3) return 2;
 
         // 4 erősen felhős
-        else if (val == 4) return 3;
+        else if (val == 4) return 2;
 
         // 5 borult
         else if (val == 5) return 3;
@@ -93,7 +94,7 @@ partial class Program
         else if (val == 11) return 3;
 
         // 12 erősen fátyolfelhős
-        else if (val == 12) return 3;
+        else if (val == 12) return 2;
 
         // 101 szitálás
         // 102 eső

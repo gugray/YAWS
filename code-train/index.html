@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>NNLWP - trainer</title>
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-  <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -78,15 +78,14 @@
 <script>
 
   let elmOut;
-  let elmFile;
-  let trainData, testData;
-  let net;
+  let trainStruct, testStruct;
+  let trainX, trainY;
+  let testX, testY;
+  let cceWeights;
+  let model;
 
   const fnTrain = "hu-train.json";
   const fnTest = "hu-test.json";
-  const nnConfig = {
-    hiddenLayers: [20, 50, 20],
-  };
 
   document.addEventListener("DOMContentLoaded", () => {
     elmOut = document.getElementsByTagName("article")[0];
@@ -120,66 +119,212 @@
 
     log("Fetching data");
     let response = await fetch(fnTrain);
-    trainData = await response.json();
+    trainStruct = await response.json();
     response = await fetch(fnTest);
-    testData = await response.json();
+    testStruct = await response.json();
+
+    const inputFields = ["pres3", "pres2", "pres1", "pres0"];
+
+    let catSums = [0, 0, 0, 0];
+    [testX, testY] = structToData(trainStruct, inputFields, catSums);
+    catSums = [0, 0, 0, 0];
+    [trainX, trainY] = structToData(trainStruct, inputFields, catSums);
+    let allCatSums = 0;
+    for (let i = 0; i < catSums.length; ++i) catSums[i] = Math.pow(catSums[i], -0.5);
+    for (const cs of catSums) allCatSums += cs;
+    for (let i = 0; i < catSums.length; ++i) catSums[i] /= allCatSums;
+    cceWeights = tf.tensor(catSums);
+    console.log(catSums);
+
     step20();
 
+    function structToData(struct, xFieldNames, catSums) {
+      let xs = [], ys = [];
+
+      for (const itm of struct) {
+
+        let xVals = [];
+        for (const fname of xFieldNames) {
+          xVals.push(Number.parseFloat(itm.input[fname]));
+        }
+        xs.push(xVals);
+
+        // ys.push(Number.parseFloat(itm.output.precipMM));
+
+        let yVals = [0, 0, 0, 0];
+        if (itm.output.precip == "None") yVals[0] = 1;
+        else if (itm.output.precip == "Light") yVals[1] = 1;
+        else if (itm.output.precip == "Medium") yVals[2] = 1;
+        else if (itm.output.precip == "Heavy") yVals[3] = 1;
+        for (let i = 0; i < yVals.length; ++i) catSums[i] += yVals[i];
+
+        // let yVals = [0, 0, 0, 0, 0, 0, 0, 0];
+        // if (itm.output.precip == "None") yVals[0] = 1;
+        // else if (itm.output.precip == "Light") yVals[1] = 1;
+        // else if (itm.output.precip == "Medium") yVals[2] = 1;
+        // else if (itm.output.precip == "Heavy") yVals[3] = 1;
+        // if (itm.output.cloud == "None") yVals[4] = 1;
+        // else if (itm.output.cloud == "Light") yVals[5] = 1;
+        // else if (itm.output.cloud == "Medium") yVals[6] = 1;
+        // else if (itm.output.cloud == "Full") yVals[7] = 1;
+
+        // let yVals = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        // if (itm.output.category == "Clear") yVals[0] = 1;
+        // else if (itm.output.category == "FewCloudsDry") yVals[1] = 1;
+        // else if (itm.output.category == "FewCloudsLittlePrecip") yVals[2] = 1;
+        // else if (itm.output.category == "ManyCloudsDry") yVals[3] = 1;
+        // else if (itm.output.category == "ManyCloudsLittlePrecip") yVals[4] = 1;
+        // else if (itm.output.category == "ManyCloudsMediumPrecip") yVals[5] = 1;
+        // else if (itm.output.category == "OvercastDry") yVals[6] = 1;
+        // else if (itm.output.category == "OvercastLittlePrecip") yVals[7] = 1;
+        // else if (itm.output.category == "OvercastMediumPrecip") yVals[8] = 1;
+        // else if (itm.output.category == "OvercastHeavyPrecip") yVals[9] = 1;
+        // else if (itm.output.category == "ExtremePrecip") yVals[10] = 1;
+        // else throw "Unexpected category: " + itm.output.category;
+
+        ys.push(yVals);
+      }
+      return [xs, ys];
+    }
   }
 
   async function step20() {
-    const options = {
-      task: 'classification',
-      dataUrl: "hu-train.json",
-      inputs: ['pres3', 'pres2', 'pres1'],
-      outputs: ['precip', 'cloud'],
-      layers:[
-        {
-          type: 'dense',
-          units: 32,
-          activation: 'sigmoid',
-        },
-        {
-          type: 'dense',
-          units: 16,
-          activation: 'sigmoid',
-        },
-        {
-          type: 'dense',
-          activation: 'sigmoid',
-        },
-      ],
-      debug: false,
+
+    model = tf.sequential()
+
+    model.add(tf.layers.dense({
+      inputShape: [trainX[0].length],
+      units: 48,
+      activation: "sigmoid",
+    }));
+    model.add(tf.layers.dense({
+      units: 48,
+      activation: "sigmoid",
+    }));
+    model.add(tf.layers.dense({
+      units: trainY[0].length,
+      activation: "softmax",
+    }));
+    // model.add(tf.layers.dense({
+    //   units: 1,
+    //   activation: "sigmoid",
+    // }));
+
+    // https://js.tensorflow.org/api/latest/#Training-Losses
+    // https://js.tensorflow.org/api/latest/#Metrics
+    const config = {
+      optimizer: tf.train.adam(0.01),
+      // loss: tf.losses.meanSquaredError,
+      // metrics: [tf.metrics.meanSquaredError],
+      loss: categoricalCrossentropyWeighted,
+      metrics: ['accuracy'],
     };
-    // Create Neural Network
-    nn = ml5.neuralNetwork(options);
+    model.compile(config);
 
-    log("Adding data");
-    for (const itm of trainData) {
-      nn.addData({
-        pres3: itm.input.pres3, pres2: itm.input.pres2, pres1: itm.input.pres1
-      }, itm.output);
-    }
+    const trainOpt = {
+      shuffle: false,
+      epochs: 2,
+      batchSize: 16,
+      validationData: [tf.tensor(testX), tf.tensor(testY)],
+      callbacks: {onEpochEnd, onBatchEnd},
+    };
 
-    log("Normalizing data");
-    nn.normalizeData();
+    let tInput = tf.tensor(trainX);
+    let tResults = tf.tensor(trainY);
+    await model.fit(tInput, tResults, trainOpt);
 
-    const trainingOptions = {
-      epochs: 1,
-      batchSize: 32,
-      validationSplit: 0.1,
-    }
-    log("Training");
-    nn.train(trainingOptions, (epoch, status) => {
-      log("Epoch " + epoch + ": " + JSON.stringify(status));
-    }, () => {
-      log("Finished training");
-      step30(nn);
+    step30();
+  }
+
+  function categoricalCrossentropyWeighted(target, output, fromLogits = false) {
+    return tf.tidy(() => {
+      if (fromLogits) {
+        output = tf.softmax(output);
+      } else {
+        // scale preds so that the class probabilities of each sample sum to 1.
+        const outputSum = tf.sum(output, output.shape.length - 1, true);
+        output = tf.div(output, outputSum);
+      }
+      output = tf.clipByValue(output, 0.000001, 1 - 0.000001);
+      return tf.neg(tf.sum(
+          tf.mul(tf.mul(target.toFloat(), tf.log(output)), cceWeights),
+        output.shape.length - 1));
     });
   }
 
-  async function step30(nn) {
-    nn.save();
+
+  function onBatchEnd(ix, logs) {
+    if (ix % 100 != 0) return;
+    console.log('Batch end', ix, logs);
+  }
+
+  function onEpochEnd(ix, logs) {
+    console.log('Epoch end', ix, logs);
+  }
+
+  async function step30() {
+
+    let nCorrect = 0;
+    let nTotal = 100;
+    for (let i = 0; i < nTotal; ++i) {
+
+      let res = model.predict(tf.tensor(trainX[i]).expandDims());
+      res = res.dataSync();
+
+      let trainHotIx = findMaxIx(trainY[i]);
+      let predHotIx = findMaxIx(res);
+      if (trainHotIx == predHotIx) ++nCorrect;
+      console.log("Truth/Pred: " + trainHotIx + " / " + predHotIx);
+
+      // console.log("Truth/Pred: " + trainY[i] + " / " + res);
+    }
+    console.log(nCorrect + " correct of " + nTotal + " (" + (nCorrect * 100 / nTotal).toFixed(2) + "%)");
+
+    function findMaxIx(vals) {
+      let max = Number.MIN_VALUE;
+      let res = -1;
+      for (let i = 0; i < vals.length; ++i) {
+        if (vals[i] > max) {
+          max = vals[i];
+          res = i;
+        }
+      }
+      return res;
+    }
+
+    step40();
+  }
+
+  async function step40() {
+    let dump = "layers " + 2 * model.layers.length + "\n";
+    for (let i = 0; i < model.layers.length; ++i) {
+
+      let layer = model.layers[i];
+      dump += "layer " + (2 * i) + " " + layer.getClassName() + "\n"
+
+      let weights = await layer.getWeights()[0].data();
+      let nInputs = weights.length / layer.units;
+      dump += nInputs + " " + layer.units + "\n";
+
+      for (let j = 0; j < nInputs; ++j) {
+        dump += "[ ";
+        for (let k = 0; k < layer.units; ++k) {
+          dump += " " + weights[j * layer.units + k] + " ";
+        }
+        dump += "]\n";
+      }
+
+      let biases = await layer.getWeights()[1].data();
+      dump += "[ ";
+      for (let j = 0; j < layer.units; ++j) {
+        dump += " " + biases[j] + " ";
+      }
+      dump += "]\n";
+
+      dump += "layer " + (2 * i + 1) + " Activation\n";
+      dump += layer.activation.getClassName() + "\n";
+    }
+    // console.log(dump);
   }
 
 </script>

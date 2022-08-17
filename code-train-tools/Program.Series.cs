@@ -9,6 +9,7 @@ partial class Program
 {
     const float mediumRainThreshold = 1;
     const float heavyRainThreshold = 4;
+    const float extremeRainThreshold = 8;
 
     static void writeSeries(string fn, IEnumerable<HourlyRecord> series)
     {
@@ -19,6 +20,7 @@ partial class Program
 
     static float normPres(float pres)
     {
+        // return pres;
         if (pres < 950) pres = 950;
         if (pres > 1050) pres = 1050;
         return (pres - 950) / (1050 - 950);
@@ -26,14 +28,94 @@ partial class Program
 
     static float normHum(float hum)
     {
+        // return hum;
         return hum / 100;
     }
 
     static float normTemp(float temp)
     {
+        // return temp;
         if (temp < -30) temp = -30;
         if (temp > 50) temp = 50;
         return (temp + 30) / (50 - -30);
+    }
+
+    static readonly string[] precipVals = { "None", "Light", "Medium", "Heavy" };
+    static readonly string[] precipNums = { "0", "0.5", "1", "1.5" };
+    
+    static string encodePrecip(float precip)
+    {
+        string[] vals = precipVals;
+        // string[] vals = precipNums;
+
+        if (precip == 0) return vals[0];
+        else if (precip < mediumRainThreshold) return vals[1];
+        else if (precip < heavyRainThreshold) return vals[2];
+        else return vals[3];
+    }
+
+    static readonly string[] cloudVals = { "None", "Light", "Medium", "Full" };
+
+    static string encodeCloud(int cloud)
+    {
+        if (cloud == 0) return cloudVals[0];
+        else if (cloud == 1) return cloudVals[1];
+        else if (cloud == 2) return cloudVals[2];
+        else if (cloud == 3) return cloudVals[3];
+        else throw new Exception("Wrong cloud value: " + cloud);
+
+        // return (cloud * 0.5F).ToString();
+    }
+
+    static void encodeCategory(ModelOutput mo, float precipMM)
+    {
+        if (precipMM >= extremeRainThreshold)
+        {
+            mo.Category = Category.ExtremePrecip.ToString();
+            return;
+        }
+        if (mo.Cloud == "None")
+        {
+            if (mo.Precip == "None")
+                mo.Category = Category.Clear.ToString();
+            else if (mo.Precip == "Light")
+                mo.Category = Category.FewCloudsLittlePrecip.ToString();
+            else
+                throw new Exception("Cloud None; Precip > Light");
+        }
+        else if (mo.Cloud == "Light")
+        {
+            if (mo.Precip == "None")
+                mo.Category = Category.FewCloudsDry.ToString();
+            else if (mo.Precip == "Light")
+                mo.Category = Category.FewCloudsLittlePrecip.ToString();
+            else if (mo.Precip == "Medium")
+                mo.Category = Category.ManyCloudsMediumPrecip.ToString();
+            else
+                throw new Exception("Cloud Light; Precip > Medium");
+        }
+        else if (mo.Cloud == "Medium")
+        {
+            if (mo.Precip == "None")
+                mo.Category = Category.ManyCloudsDry.ToString();
+            else if (mo.Precip == "Light")
+                mo.Category = Category.ManyCloudsLittlePrecip.ToString();
+            else if (mo.Precip == "Medium")
+                mo.Category = Category.ManyCloudsMediumPrecip.ToString();
+            else
+                mo.Category = Category.OvercastHeavyPrecip.ToString();
+        }
+        else
+        {
+            if (mo.Precip == "None")
+                mo.Category = Category.OvercastDry.ToString();
+            else if (mo.Precip == "Light")
+                mo.Category = Category.OvercastLittlePrecip.ToString();
+            else if (mo.Precip == "Medium")
+                mo.Category = Category.OvercastMediumPrecip.ToString();
+            else
+                mo.Category = Category.OvercastHeavyPrecip.ToString();
+        }
     }
 
     static void seriesToModel(string fnSeries, List<ModelRecord> train, List<ModelRecord> test)
@@ -86,19 +168,16 @@ partial class Program
             mr.Input.RelHum0 = normHum(series[i].RelHum);
             mr.Input.Temp0 = normTemp(series[i].Temp);
 
+            mr.Output.PrecipMM = (float)Math.Sqrt(series[i].Precip) / 4;
+            if (mr.Output.PrecipMM > 1) mr.Output.PrecipMM = 1;
+
             // Encode discrete precipitation values
-            var precip = series[i].Precip;
-            if (precip == 0) mr.Output.Precip = "None";
-            else if (precip < mediumRainThreshold) mr.Output.Precip = "Light";
-            else if (precip < heavyRainThreshold) mr.Output.Precip = "Medium";
-            else mr.Output.Precip = "Heavy";
+            mr.Output.Precip = encodePrecip(series[i].Precip);
 
             // Encode discrete cloud values
-            var cloud = series[i].Cloud;
-            if (cloud == 0) mr.Output.Cloud = "None";
-            else if (cloud == 1) mr.Output.Cloud = "Light";
-            else if (cloud == 2) mr.Output.Cloud = "Medium";
-            else mr.Output.Cloud = "Full";
+            mr.Output.Cloud = encodeCloud(series[i].Cloud);
+
+            encodeCategory(mr.Output, series[i].Precip);
 
             // File away this record
             mrecs.Add(mr);
