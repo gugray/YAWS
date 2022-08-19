@@ -1,12 +1,10 @@
 #include <Arduino.h>
-#include <DOG7565R.h>
 #include <LittleFS.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
-#include <WiFiClientSecureBearSSL.h>
-#include <RH_ASK.h>
-#include <Adafruit_BME280.h>
-#include "canvas.h"
+#include <Ticker.h>
+#include "duty100.h"
+#include "globals.h"
 
 // https://wolles-elektronikkiste.de/433-mhz-funk-mit-dem-arduino
 
@@ -15,25 +13,23 @@ const char *wifiNetwork = "Cirrus";
 const char *wifiPassword = "brouhaha";
 const uint32_t wifiConnectTimeout = 10000;
 const char *fileUrl = "https://zydeo.net/firmware.bin";
-const float altitude = 55.0F;
 
-#define LED_PIN LED_BUILTIN
-
-#define RADIO_RX_PIN D6
-#define RADIO_TX_PIN D4 // Not used; we're only receiving
-
-#define BRIGHTNESS_PIN A0
-
-#define DOG_CS_PIN D8
-#define DOG_A0_PIN D3
-#define DOG_RESET_PIN D0
-
+// Definitions of shared objects declared in globals.h
 RH_ASK radio(2000, RADIO_RX_PIN, RADIO_TX_PIN);
-Adafruit_BME280 bme;
 DOG7565R dog;
-Canvas canvas;
 BearSSL::WiFiClientSecure secureBearClient;
 
+Settings stgs;
+Instrument instrument;
+Canvas canvas;
+Predictor predictor;
+
+float currTemp;
+float currHumi;
+float currPres;
+
+// Used in main only
+Ticker ticker;
 const size_t bufSize = 1024;
 char buf[bufSize];
 
@@ -185,12 +181,14 @@ void setup()
   radio.init();
   radio.setModeRx();
 
-  bool bmeOk = bme.begin(0x76);
+  bool bmeOk = instrument.begin(BME_ADDR);
   if (!bmeOk)
   {
     canvas.fwText(20, 0, "NO BME!!");
     flushCanvasToDisplay();
   }
+
+  ticker.attach_ms(100, duty100);
 
   digitalWrite(LED_PIN, HIGH);
   delay(500);
@@ -228,18 +226,45 @@ void loop()
 
   canvas.clear();
 
+  sprintf(buf, "%5.1f*", currTemp);
+  canvas.text(0, 30, Canvas::font30, buf);
+
   int16_t brightness = analogRead(BRIGHTNESS_PIN);
   sprintf(buf, "Light: %4d", brightness);
-  canvas.fwText(20, 5, buf);
+  canvas.fwText(8, 4, buf);
 
-  float temp = bme.readTemperature();
-  float humi = bme.readHumidity();
-  float pres = bme.readPressure();
-  pres = pres / pow((1 - altitude / 44330), 5.255) / 100;
-  sprintf(buf, "%5.1fC %d%% %4.0f hPa", temp, (uint16_t)round(humi), pres);
-  canvas.fwText(0, 6, buf);
+  sprintf(buf, "%5.1fC %d%% %4.0f hPa", currTemp, (uint16_t)round(currHumi), currPres);
+  canvas.fwText(2, 5, buf);
+
+  auto trend = predictor.getTrend();
+  const char *trendStr = "T?";
+  if (trend == Predictor::trendRapidRise)
+    trendStr = "Rise^Fast";
+  else if (trend == Predictor::trendRise)
+    trendStr = "Rise";
+  else if (trend == Predictor::trendFlat)
+    trendStr = "Stable";
+  else if (trend == Predictor::trendSink)
+    trendStr = "Sink";
+  else if (trend == Predictor::trendRapidSink)
+    trendStr = "Sink^Fast";
+  canvas.fwText(8, 6, trendStr);
+
+  auto state = predictor.getState();
+  const char *stateStr = "S?";
+  if (state == Predictor::stateUnstableUp)
+    stateStr = "Unstable";
+  else if (state == Predictor::stateSun)
+    stateStr = "Sun";
+  else if (state == Predictor::stateMixed)
+    stateStr = "Sun/Cloud";
+  else if (state == Predictor::stateCloud)
+    stateStr = "Cloud";
+  else if (state == Predictor::stateUnstableDown)
+    stateStr = "Storm";
+  canvas.fwText(72, 6, stateStr);
 
   flushCanvasToDisplay();
 
-  delay(500);
+  delay(200);
 }
