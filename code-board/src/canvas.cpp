@@ -22,6 +22,34 @@ struct Font
 	}
 };
 
+Font font5Data = {
+		5,
+		font5_GLYPH_COUNT,
+		font5Glyphs,
+		font5PixelData,
+};
+
+Font fontHumiData = {
+		7,
+		fontHumi_GLYPH_COUNT,
+		fontHumiGlyphs,
+		fontHumiPixelData,
+};
+
+Font font10Data = {
+		10,
+		font10_GLYPH_COUNT,
+		font10Glyphs,
+		font10PixelData,
+};
+
+Font font16Data = {
+		16,
+		font16_GLYPH_COUNT,
+		font16Glyphs,
+		font16PixelData,
+};
+
 Font font30Data = {
 		30,
 		font30_GLYPH_COUNT,
@@ -49,6 +77,8 @@ void Canvas::clear()
 
 void Canvas::setPixel(uint8_t x, uint8_t y, bool on)
 {
+	if (x >= 128 || y >= 64)
+		return;
 	dirty = true;
 	uint16_t row = y / 8;
 	uint8_t bit = y % 8;
@@ -71,11 +101,53 @@ void Canvas::line(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
 	}
 }
 
-void Canvas::text(uint8_t x, uint8_t y, Fonts font, const char *str)
+void Canvas::box(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool on)
 {
-	Font *fd;
-	if (font == font30)
+	dirty = true;
+	for (uint8_t i = x; i < x + w; ++i)
+	{
+		for (uint8_t j = y; j < y + h; ++j)
+		{
+			if (i >= 128 || j >= 64)
+				continue;
+			setPixel(i, j, on);
+		}
+	}
+}
+
+Font *Canvas::getFont(Fonts font)
+{
+	Font *fd = 0;
+	if (font == font5)
+		fd = &font5Data;
+	else if (font == fontHumi)
+		fd = &fontHumiData;
+	else if (font == font10)
+		fd = &font10Data;
+	else if (font == font16)
+		fd = &font16Data;
+	else if (font == font30)
 		fd = &font30Data;
+	return fd;
+}
+
+uint8_t Canvas::measureText(Fonts font, const char *str)
+{
+	Font *fd = getFont(font);
+	uint8_t width = 0;
+	for (uint8_t ix = 0; ix < strlen(str); ++ix)
+	{
+		Glyph *g = fd->getGlyph(str[ix]);
+		if (g == 0)
+			continue;
+		width += g->advance;
+	}
+	return width;
+}
+
+void Canvas::text(uint8_t x, uint8_t y, Fonts font, bool clearBg, const char *str)
+{
+	Font *fd = getFont(font);
 	for (uint8_t ix = 0; ix < strlen(str) && x < 128; ++ix)
 	{
 		Glyph *g = fd->getGlyph(str[ix]);
@@ -91,6 +163,8 @@ void Canvas::text(uint8_t x, uint8_t y, Fonts font, const char *str)
 				uint8_t mask = 1 << bitIx;
 				uint8_t *pd = fd->pixelData + pdataPos + byteIx;
 				bool isOn = (*pd & mask) != 0;
+				if (!clearBg && !isOn)
+					continue;
 				setPixel(x, y + chry - fd->height, isOn);
 			}
 			pdataPos += ((fd->height - 1) / 8) + 1;
