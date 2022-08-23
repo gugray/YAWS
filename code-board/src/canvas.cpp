@@ -43,11 +43,11 @@ Font font10Data = {
 		font10PixelData,
 };
 
-Font font16Data = {
-		16,
-		font16_GLYPH_COUNT,
-		font16Glyphs,
-		font16PixelData,
+Font font14Data = {
+		14,
+		font14_GLYPH_COUNT,
+		font14Glyphs,
+		font14PixelData,
 };
 
 Font font30Data = {
@@ -55,6 +55,13 @@ Font font30Data = {
 		font30_GLYPH_COUNT,
 		font30Glyphs,
 		font30PixelData,
+};
+
+Font wicons18Data = {
+		18,
+		wicons18_GLYPH_COUNT,
+		wicons18Glyphs,
+		wicons18PixelData,
 };
 
 Canvas::Canvas()
@@ -124,10 +131,12 @@ Font *Canvas::getFont(Fonts font)
 		fd = &fontHumiData;
 	else if (font == font10)
 		fd = &font10Data;
-	else if (font == font16)
-		fd = &font16Data;
+	else if (font == font14)
+		fd = &font14Data;
 	else if (font == font30)
 		fd = &font30Data;
+	else if (font == wicons18)
+		fd = &wicons18Data;
 	return fd;
 }
 

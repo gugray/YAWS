@@ -268,6 +268,8 @@ void drawInstrument(float pres)
   canvas.text(64, 63, Canvas::font5, true, "1040");
 }
 
+char cstatus = 'a';
+
 void loop()
 {
   // Control brightness
@@ -304,8 +306,9 @@ void loop()
 
   // Write secondary temperature
   sprintf(buf, "%5.1f*", -currTemp);
-  uint8_t tempWidth = canvas.measureText(Canvas::font16, buf);
-  canvas.text(127 - tempWidth, 42, Canvas::font16, false, buf);
+  strcpy(buf, "--.-*");
+  uint8_t tempWidth = canvas.measureText(Canvas::font14, buf);
+  canvas.text(127 - tempWidth, 42, Canvas::font14, false, buf);
 
   // int16_t brightness = analogRead(BRIGHTNESS_PIN);
 
@@ -334,7 +337,7 @@ void loop()
     trendStr = "Sink";
   else if (trend == Predictor::trendRapidSink)
     trendStr = "Sink^Fast";
-  canvas.fwText(92, 6, trendStr);
+  // canvas.fwText(92, 6, trendStr);
 
   auto state = predictor.getState();
   const char *stateStr = "S?";
@@ -348,9 +351,16 @@ void loop()
     stateStr = "Cloud";
   else if (state == Predictor::stateUnstableDown)
     stateStr = "Storm";
-  canvas.fwText(92, 7, stateStr);
+  // canvas.fwText(92, 7, stateStr);
+
+  strcpy(buf, "a");
+  buf[0] = cstatus;
+  canvas.text(105, 63, Canvas::wicons18, true, buf);
+  cstatus++;
+  if (cstatus == 'j')
+    cstatus = 'a';
 
   flushCanvasToDisplay();
 
-  delay(200);
+  delay(500);
 }
