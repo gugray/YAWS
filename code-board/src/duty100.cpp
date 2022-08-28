@@ -3,10 +3,39 @@
 #include "globals.h"
 #include "receiver.h"
 
+uint32_t btnPressedAt = 0xffffffff;
 uint16_t duty100SecCounter = 0;
+
+void updateButton()
+{
+  // Is button pressed? LOW is pressed (has pullup)
+  auto btnVal = digitalRead(BUTTON_PIN);
+  if (btnVal == LOW)
+  {
+    auto currMillis = millis() & 0x7fffffff;
+    if (btnPressedAt == 0xffffffff)
+    {
+      buttonPressed = 1;
+      btnPressedAt = currMillis;
+    }
+    else
+    {
+      buttonPressed = currMillis - btnPressedAt;
+    }
+  }
+  // Button is not pressed
+  else
+  {
+    btnPressedAt = 0xffffffff;
+    buttonPressed = 0;
+  }
+}
 
 void duty100()
 {
+  // Setup mode push button - read pin and update state
+  updateButton();
+
   // Check ambient light; adjust backlight
   currBrightness = analogRead(PHOTO_RESISTOR_PIN);
   // TODO: Adjust backlight

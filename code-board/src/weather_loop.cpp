@@ -57,7 +57,7 @@ void drawInstrument(float pres)
   drawArrow(arrowAngle);
 
   // Format pressure as number
-  sprintf(buf, "%4.0fh", currPres);
+  sprintf(buf, "%4.0fh", round(currPres));
   uint16_t presWidth = canvas.measureText(Canvas::font10, buf);
 
   // Clear out text area + border
@@ -83,7 +83,7 @@ uint16_t weatherLoop()
   canvas.text(0, 30, Canvas::font30, true, buf);
 
   // Write secondary temperature
-  sprintf(buf, "%5.1f*", -currTemp);
+  // sprintf(buf, "%5.1f*", -currTemp);
   strcpy(buf, "--.-*");
   uint8_t tempWidth = canvas.measureText(Canvas::font14, buf);
   canvas.text(127 - tempWidth, 42, Canvas::font14, false, buf);
@@ -101,18 +101,18 @@ uint16_t weatherLoop()
 
   drawInstrument(round(currPres));
 
-  auto trend = predictor.getTrend();
-  const char *trendStr = "T?";
-  if (trend == Predictor::trendRapidRise)
-    trendStr = "Rise^Fast";
-  else if (trend == Predictor::trendRise)
-    trendStr = "Rise";
-  else if (trend == Predictor::trendFlat)
-    trendStr = "Stable";
-  else if (trend == Predictor::trendSink)
-    trendStr = "Sink";
-  else if (trend == Predictor::trendRapidSink)
-    trendStr = "Sink^Fast";
+  // auto trend = predictor.getTrend();
+  // const char *trendStr = "T?";
+  // if (trend == Predictor::trendRapidRise)
+  //   trendStr = "Rise^Fast";
+  // else if (trend == Predictor::trendRise)
+  //   trendStr = "Rise";
+  // else if (trend == Predictor::trendFlat)
+  //   trendStr = "Stable";
+  // else if (trend == Predictor::trendSink)
+  //   trendStr = "Sink";
+  // else if (trend == Predictor::trendRapidSink)
+  //   trendStr = "Sink^Fast";
   // canvas.fwText(92, 6, trendStr);
 
   strcpy(buf, "x");

@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <LittleFS.h>
 #include <Ticker.h>
 #include "duty100.h"
 #include "weather_loop.h"
@@ -17,6 +18,7 @@ Canvas canvas;
 Predictor predictor;
 uint16_t buttonPressed = 0;
 bool bmeOk = false;
+bool fsOk = false;
 const size_t bufSize = 1024;
 char *buf = new char[bufSize];
 
@@ -35,7 +37,8 @@ enum Loops
 };
 
 Ticker ticker;
-Loops currLoop = eWeatherLoop;
+// Loops currLoop = eWebServerLoop; // DBG
+Loops currLoop = eWeatherLoop; // DBG
 
 void flushCanvasToDisplay()
 {
@@ -62,7 +65,11 @@ void setup()
   digitalWrite(LED_PIN, LOW);
   delay(500);
 
+  fsOk = LittleFS.begin();
+
+  // Input pins: photoresistor; button
   pinMode(PHOTO_RESISTOR_PIN, INPUT);
+  pinMode(BUTTON_PIN, INPUT);
 
   // Set up PWM for brightness
   analogWriteRange(1023);

@@ -18,6 +18,7 @@
 #define DOG_CS_PIN D8
 #define DOG_A0_PIN D3
 #define DOG_RESET_PIN D0
+#define BUTTON_PIN RX
 
 #define BME_ADDR 0x76
 
@@ -31,7 +32,7 @@ extern Settings stgs;
 extern Instrument instrument;
 extern Canvas canvas;
 extern Predictor predictor;
-extern uint16_t buttonPressed;
+extern uint16_t buttonPressed; // Button has been pressed for this many msec
 extern bool bmeOk;
 extern const size_t bufSize;
 extern char *buf;
