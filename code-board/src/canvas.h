@@ -16,6 +16,7 @@ struct Canvas
     font14,
     font30,
     wicons18,
+    arrows14,
   };
 
   bool dirty = true;

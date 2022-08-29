@@ -101,33 +101,35 @@ uint16_t weatherLoop()
 
   drawInstrument(round(currPres));
 
-  // auto trend = predictor.getTrend();
-  // const char *trendStr = "T?";
-  // if (trend == Predictor::trendRapidRise)
-  //   trendStr = "Rise^Fast";
-  // else if (trend == Predictor::trendRise)
-  //   trendStr = "Rise";
-  // else if (trend == Predictor::trendFlat)
-  //   trendStr = "Stable";
-  // else if (trend == Predictor::trendSink)
-  //   trendStr = "Sink";
-  // else if (trend == Predictor::trendRapidSink)
-  //   trendStr = "Sink^Fast";
-  // canvas.fwText(92, 6, trendStr);
+  strcpy(buf, "x");
+  auto trend = predictor.getTrend();
+  if (trend == Predictor::trendRapidRise)
+    buf[0] = 'd';
+  else if (trend == Predictor::trendRise)
+    buf[0] = 'c';
+  else if (trend == Predictor::trendFlat)
+    buf[0] = 'f';
+  else if (trend == Predictor::trendSink)
+    buf[0] = 'b';
+  else if (trend == Predictor::trendRapidSink)
+    buf[0] = 'e';
+  if (buf[0] != 'x')
+    canvas.text(88, 62, Canvas::arrows14, true, buf);
 
   strcpy(buf, "x");
   auto state = predictor.getState();
-  if (state == Predictor::stateUnstableUp)
-    buf[0] = 'i';
+  if (state == Predictor::stateUnstableRise)
+    buf[0] = 'j';
   else if (state == Predictor::stateSun)
     buf[0] = 'd';
   else if (state == Predictor::stateMixed)
     buf[0] = 'f';
   else if (state == Predictor::stateCloud)
     buf[0] = 'b';
-  else if (state == Predictor::stateUnstableDown)
+  else if (state == Predictor::stateStorm)
     buf[0] = 'h';
-  canvas.text(105, 63, Canvas::wicons18, true, buf);
+  if (buf[0] != 'x')
+    canvas.text(105, 63, Canvas::wicons18, true, buf);
 
   flushCanvasToDisplay();
 

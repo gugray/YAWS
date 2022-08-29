@@ -1,22 +1,20 @@
 #include <Arduino.h>
 #include "predictor.h"
 
-#define HPA_HI 1022.6
-#define HPA_LO 1009.1
-#define RISE_QUICK 0.75
-#define RISE_MEDIUM 0.42
-#define RISE_SLOW 0.25
-#define SINK_QUICK -0.75
-#define SINK_MEDIUM -0.42
-#define SINK_SLOW -0.25
+#define HIGH_THRESHOLD 1022.6
+#define LOW_THRESHOLD 1009.1
+#define CHG_ULTRA 1.2
+#define CHG_FAST 0.75
+#define CHG_SLOW 0.42
+#define CHG_THRESHOLD 0.25
 
-void Predictor::update(float temp, float humi, float pres)
+void Predictor::update(float pres)
 {
-  // We record readings every 10 minutes
+  // We record readings every 5 minutes
   if (seconds != 0)
   {
     seconds++;
-    if (seconds == 600)
+    if (seconds == PREDICTOR_PERIOD_SECONDS)
       seconds = 0;
     return;
   }
@@ -25,14 +23,14 @@ void Predictor::update(float temp, float humi, float pres)
   // File new readings
   if (nReadings < MAX_PREDICTOR_READINGS)
   {
-    readings[nReadings] = Reading{temp, humi, pres};
+    readings[nReadings] = pres;
     ++nReadings;
   }
   else
   {
     for (uint16 i = 1; i < MAX_PREDICTOR_READINGS; ++i)
       readings[i - 1] = readings[i];
-    readings[MAX_PREDICTOR_READINGS - 1] = Reading{temp, humi, pres};
+    readings[MAX_PREDICTOR_READINGS - 1] = pres;
   }
 
   // Update state and trend
@@ -41,106 +39,102 @@ void Predictor::update(float temp, float humi, float pres)
 
 void Predictor::predict()
 {
-  // Not enough history? Just go by absolute pressure
-  float current = readings[nReadings - 1].pres;
-  if (nReadings < 7)
+  // Less history that one full hour? Just go by absolute pressure
+  float current = readings[nReadings - 1];
+  if (nReadings < 13)
   {
-    if (current >= HPA_HI)
+    if (current >= HIGH_THRESHOLD)
       state = stateSun;
-    else if (current >= HPA_LO)
+    else if (current >= LOW_THRESHOLD)
       state = stateMixed;
     else
       state = stateCloud;
     trend = trendUnknown;
     return;
   }
-  float delta = current - readings[nReadings - 6 - 1].pres;
-  if (nReadings >= 19)
-    delta = (current - readings[nReadings - 18 - 1].pres) / 3;
 
-  if (delta > RISE_QUICK)
+  // Get pressure trends from last hour, and from full history
+  float fullSlope, hourSlope;
+  getSlopes(fullSlope, hourSlope);
+
+  // If we have very fasdt fall rise/fall in last hour, we go by that alone
+  // Otherwisewe look at trend of full series (3 hours normally)
+  if (fullSlope < -CHG_FAST || hourSlope < -CHG_ULTRA)
   {
-    // Rapid rise: Unstable
-    trend = trendRapidRise;
-    state = stateUnstableUp;
-  }
-  else if (delta > RISE_MEDIUM)
-  {
-    // Moderate rise: good weather ahead
-    trend = trendRise;
-    state = stateSun;
-  }
-  else if (delta > RISE_SLOW)
-  {
-    // Slow rise: improving weather
-    trend = trendRise;
-    state = improveState(state);
-    // If we're in low-pressure range, don't get better then mixed
-    if (current < HPA_LO && state == stateSun)
-      state = stateMixed;
-  }
-  else if (delta < SINK_QUICK)
-  {
-    // Quickly sinking: Stormy weather
     trend = trendRapidSink;
-    state = stateUnstableDown;
+    state = stateStorm;
+    return;
   }
-  else if (delta < SINK_MEDIUM)
+  else if (fullSlope > CHG_FAST || hourSlope > CHG_ULTRA)
   {
-    // Moderately sinking: bad weather ahead
+    trend = trendRapidRise;
+    state = stateUnstableRise;
+    return;
+  }
+  else if (fullSlope < -CHG_SLOW)
+  {
     trend = trendSink;
     state = stateCloud;
+    return;
+
   }
-  else if (delta < SINK_SLOW)
+  else if (fullSlope > CHG_SLOW)
+  {
+    trend = trendRise;
+    state = stateSun;
+    return;
+  }
+  else if (fullSlope < -CHG_THRESHOLD)
   {
     trend = trendSink;
-    state = deteriorateState(state);
-    // If we're in high-pressure range, don't get worse than mixed
-    if (current > HPA_HI && state == stateCloud)
+    if (current > LOW_THRESHOLD)
+      state = stateMixed;
+  }
+  else if (fullSlope > CHG_THRESHOLD)
+  {
+    trend = trendRise;
+    if (current < HIGH_THRESHOLD)
       state = stateMixed;
   }
   else
   {
-    // Absolute rate of change very small in either direction: weather is steady
+    // State doesn't change with stable trend
     trend = trendFlat;
-    // Remove extremes, just bad or good weather
-    if (state == stateUnstableDown)
-      state = stateCloud;
-    else if (state == stateUnstableUp)
-      state = stateSun;
   }
 }
 
-Predictor::State Predictor::improveState(State state)
+void Predictor::getSlopes(float &fullSlope, float &hourSlope)
 {
-  if (state == stateUnstableUp)
-    return stateSun;
-  else if (state == stateUnstableDown)
-    return stateCloud;
-  else if (state == stateCloud)
-    return stateMixed;
-  else if (state == stateMixed)
-    return stateSun;
-  else if (state == stateSun)
-    return stateSun;
-  // Unknown should not happen though
-  return stateUnknown;
-}
-
-Predictor::State Predictor::deteriorateState(State state)
-{
-  if (state == stateUnstableUp)
-    return stateMixed;
-  else if (state == stateUnstableDown)
-    return stateCloud;
-  else if (state == stateCloud)
-    return stateCloud;
-  else if (state == stateMixed)
-    return stateCloud;
-  else if (state == stateSun)
-    return stateMixed;
-  // Unknown should not happen though
-  return stateUnknown;
+  // Find the best-fit line
+  // Every hour is an increase of 1 in x
+  // Y values are the pressure readings
+  // Resulting slope is the hourly rate of change
+  // https://faculty.cs.niu.edu/~hutchins/csci297p2/webpages/best-fit.htm
+  float sumx = 0,
+        sumy = 0,
+        sumx2 = 0,
+        sumxy = 0;
+  int16_t i;
+  for (i = nReadings - 1; i >= nReadings - 13; --i)
+  {
+    float x = (float)i / 12;
+    float y = readings[i];
+    sumx += x;
+    sumy += y;
+    sumx2 += x * x;
+    sumxy += x * y;
+  }
+  hourSlope = (sumxy - sumx * sumy / 13) / (sumx2 - sumx * sumx / 13);
+  for (i = nReadings - 14; i >= 0; --i)
+  {
+    float x = (float)i / 12;
+    float y = readings[i];
+    sumx += x;
+    sumy += y;
+    sumx2 += x * x;
+    sumxy += x * y;
+  }
+  fullSlope = (sumxy - sumx * sumy / nReadings) / (sumx2 - sumx * sumx / nReadings);
 }
 
 // # Use the calculated pressure difference to finally make the forecast

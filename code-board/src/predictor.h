@@ -1,7 +1,8 @@
 #ifndef PREDICTOR_H
 #define PREDICTOR_H
 
-#define MAX_PREDICTOR_READINGS 19 // 3 hours: 6 per hour at 10-minute intervals, plus current
+#define MAX_PREDICTOR_READINGS 37 // 3 hours: 12 per hour at 5-minute intervals, plus current
+#define PREDICTOR_PERIOD_SECONDS 300
 
 class Predictor
 {
@@ -12,8 +13,8 @@ public:
     stateSun,
     stateMixed,
     stateCloud,
-    stateUnstableUp,
-    stateUnstableDown,
+    stateUnstableRise,
+    stateStorm,
   };
 
   enum Trend
@@ -27,27 +28,20 @@ public:
   };
 
 private:
-  struct Reading
-  {
-    float temp;
-    float humi;
-    float pres;
-  };
-
-private:
   uint16_t seconds = 0;
   uint16_t nReadings = 0;
-  Reading readings[MAX_PREDICTOR_READINGS];
+  float readings[MAX_PREDICTOR_READINGS];
   Trend trend = trendUnknown;
   State state = stateUnknown;
 
 private:
   void predict();
-  static State improveState(State state);
-  static State deteriorateState(State state);
+  void getSlopes(float &fullSlope, float &hourSlope);
 
 public:
-  void update(float temp, float humi, float pres);
+  // Must be called once per second.
+  void update(float pres);
+
   Trend getTrend() { return trend; }
   State getState() { return state; }
 };

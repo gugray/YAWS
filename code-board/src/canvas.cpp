@@ -64,6 +64,13 @@ Font wicons18Data = {
 		wicons18PixelData,
 };
 
+Font arrows14Data = {
+		14,
+		arrows14_GLYPH_COUNT,
+		arrows14Glyphs,
+		arrows14PixelData,
+};
+
 Canvas::Canvas()
 {
 	clear();
@@ -137,6 +144,8 @@ Font *Canvas::getFont(Fonts font)
 		fd = &font30Data;
 	else if (font == wicons18)
 		fd = &wicons18Data;
+	else if (font == arrows14)
+		fd = &arrows14Data;
 	return fd;
 }
 

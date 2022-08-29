@@ -58,7 +58,7 @@ void duty100()
   instrument.update(stgs.altitude, currTemp, currHumi, currPres);
 
   // Ping predictor to update its predictions
-  predictor.update(currTemp, currHumi, currPres);
+  predictor.update(currPres);
 
   // Receive radio
   receiveRadio(currExTemp, currExBattery);
