@@ -2,20 +2,25 @@
 #include "server_loop.h"
 #include <LittleFS.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
+#include <ArduinoJson.h>
 #include "globals.h"
+#include "config.h"
 
+// WiFi access point details
 const char *apSSID = "YAWS Network";
 const char *apPass = "ya12ws34";
 
-const char *fnFirmware = "firmware.bin";
-const char *wifiNetwork = "Cirrus";
-const char *wifiPassword = "";
-const uint32_t wifiConnectTimeout = 10000;
-const char *fileUrl = "https://zydeo.net/firmware.bin";
+// For serving JSON responses
+const size_t jsonDocSize = 256;
+const size_t respBufSize = 256;
+const char *respBuf = new char[respBufSize];
 
-BearSSL::WiFiClientSecure secureBearClient;
+// Firmware upload & update
+const char *fnFirmware = "firmware.bin";
+File uploadFile;
+
+// Web server
 ESP8266WebServer server;
 bool serverConfigured = false;
 bool serverRunning = false;
@@ -29,119 +34,124 @@ enum LoopMode
 
 LoopMode loopMode = lmNotStarted;
 
-size_t downloadFile(const char *url, const char *fn)
+void runUpdate()
 {
-  if (LittleFS.exists(fn))
-    LittleFS.remove(fn);
-  File f = LittleFS.open(fn, "w");
-  if (!f)
+  // Shut down server
+  server.close();
+  server.stop();
+  serverRunning = false;
+
+  // Show "Updating" message
+  canvas.clear();
+  canvas.fwText(20, 2, "Updating...");
+  flushCanvasToDisplay();
+
+  // Do the update!
+  File f = LittleFS.open(fnFirmware, "r");
+  Update.begin(f.size());
+  Update.writeStream(f);
+  if (Update.end())
   {
-    Serial.printf("Failed to create file\n");
-    return 0;
-  }
-
-  HTTPClient http;
-  if (!http.begin(secureBearClient, url))
-  {
-    Serial.printf("http.begin() failed\n");
-    f.close();
-    return 0;
-  }
-
-  int16_t httpCode = http.GET();
-  Serial.printf("http.GET() returned: %d\n", httpCode);
-  if (httpCode != HTTP_CODE_OK && httpCode != HTTP_CODE_MOVED_PERMANENTLY)
-  {
-    f.close();
-    http.end();
-    return 0;
-  }
-
-  // Get length of document (is -1 when Server sends no Content-Length header)
-  int32_t len = http.getSize();
-  WiFiClient *stream = http.getStreamPtr();
-  // Read all data from server
-  while (http.connected() && (len > 0 || len == -1))
-  {
-    yield();
-    int32_t size = stream->available();
-    if (size <= 0)
-      continue;
-    if (size > (int32_t)bufSize)
-      size = bufSize;
-    size_t nRead = stream->readBytes(buf, size);
-    if (nRead == 0)
-      break;
-    if (len > 0)
-      len -= nRead;
-    f.write(buf, nRead);
-  }
-
-  size_t sz = f.size();
-  Serial.printf("Downloaded %d bytes\n", sz);
-
-  f.close();
-  http.end();
-  return sz;
-}
-
-void doWifiStuff()
-{
-  Serial.begin(9600);
-  Serial.printf("Hello, world.\n");
-
-  WiFi.begin(wifiNetwork, wifiPassword);
-  Serial.printf("Connecting to WiFi...\n");
-  int8_t wifiStatus = WiFi.waitForConnectResult(wifiConnectTimeout);
-  if (wifiStatus == WL_CONNECTED)
-  {
-    Serial.printf("Connected to WiFi\n");
-    String ipStr = WiFi.localIP().toString();
-    Serial.printf("Local IP: %s\n", ipStr.c_str());
-    secureBearClient.setInsecure();
-    size_t updateSize = downloadFile(fileUrl, fnFirmware);
-    if (updateSize > 0)
-    {
-      Serial.printf("Updating from file\n");
-      File f = LittleFS.open(fnFirmware, "r");
-      Update.begin(updateSize);
-      Update.writeStream(f);
-      if (!Update.end())
-      {
-        Serial.printf("Error: %d\n", Update.getError());
-      }
-      else
-      {
-        Serial.printf("Update finished; restarting. See you on the other side!\n");
-        ESP.restart();
-      }
-    }
+    ESP.restart();
   }
   else
-    Serial.printf("Not connected to WiFi; status: %d\n", wifiStatus);
-
-  // File f = LittleFS.open("test.txt", "r");
-  // while (f.available())
-  // {
-  //   f.readBytesUntil('\n', buf, bufSize);
-  //   Serial.printf(buf);
-  // }
-  // f.close();
+  {
+    canvas.clear();
+    canvas.fwText(20, 2, "Update failed :(");
+    canvas.fwText(20, 3, "Restarting...");
+    flushCanvasToDisplay();
+    delay(2000);
+    ESP.restart();
+  }
 }
 
 void handleReadings()
 {
-  sprintf(buf, "{\"temp\": %5.1f, \"pres\": %4.0f, \"humi\": %d}", currTemp, round(currPres), (uint16_t)round(currHumi));
+  StaticJsonDocument<jsonDocSize> doc;
+  doc["temp"] = currTemp;
+  doc["pres"] = round(currPres);
+  doc["humi"] = round(currHumi);
+  serializeJson(doc, buf, bufSize);
   server.send(200, "application/json", buf);
+}
+
+void handleGetConfig()
+{
+  StaticJsonDocument<jsonDocSize> doc;
+  doc["altitude"] = Config::altitude;
+  serializeJson(doc, buf, bufSize);
+  server.send(200, "application/json", buf);
+}
+
+void handlePostConfig()
+{
+  if (!server.hasArg("plain"))
+  {
+    server.send(400, "text/plain", "Body not received");
+    return;
+  }
+  const String &body = server.arg("plain");
+  StaticJsonDocument<jsonDocSize> doc;
+  auto err = deserializeJson(doc, body);
+  if (err)
+  {
+    server.send(400, "text/plain", "Failed to parse JSON in body");
+    return;
+  }
+  // Extract values from JSON permissively
+  auto jAltitude = doc["altitude"];
+  if (jAltitude)
+    Config::altitude = jAltitude.as<int16_t>();
+  // OK response
+  server.send(200, "text/plain", "Config updated");
+}
+
+void handleUpload()
+{
+  server.send(200);
+}
+
+void processUpload()
+{
+  HTTPUpload &upload = server.upload();
+  if (upload.status == UPLOAD_FILE_START)
+  {
+    if (LittleFS.exists(fnFirmware))
+      LittleFS.remove(fnFirmware);
+    uploadFile = LittleFS.open(fnFirmware, "w");
+    if (!uploadFile)
+    {
+      server.send(500, "text/plain", "Failed to create file in YAWS");
+    }
+  }
+  else if (upload.status == UPLOAD_FILE_WRITE)
+  {
+    if (!uploadFile)
+      return;
+    // Write the received bytes to the file
+    uploadFile.write(upload.buf, upload.currentSize);
+  }
+  else if (upload.status == UPLOAD_FILE_END)
+  {
+    if (!uploadFile)
+      return;
+    // Close the file
+    uploadFile.close();
+    sprintf(buf, "File successfully uploaded. Size: %d", upload.totalSize);
+    server.send(200, "text/plain", buf);
+    runUpdate();
+  }
 }
 
 void configureServer()
 {
   server.serveStatic("/", LittleFS, "/index.html");
   server.on("/readings", HTTP_GET, handleReadings);
+  server.on("/config", HTTP_GET, handleGetConfig);
+  server.on("/config", HTTP_POST, handlePostConfig);
+  server.on("/upload", HTTP_POST, handleUpload, processUpload);
   serverConfigured = true;
 }
-
 
 void beginServer()
 {
@@ -158,7 +168,7 @@ void beginServer()
     delay(2000);
     return;
   }
-  
+
   // Start web server
   canvas.fwText(20, 2, "Starting server...");
   if (!serverConfigured)
@@ -205,7 +215,7 @@ bool serverLoop()
   sprintf(buf, "Connections: %d  ", connCount);
   canvas.fwText(0, 3, buf);
   flushCanvasToDisplay();
-  
+
   // Serve requests
   server.handleClient();
 
@@ -215,5 +225,4 @@ bool serverLoop()
 
 void stopServer()
 {
-
 }

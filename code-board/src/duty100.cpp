@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "duty100.h"
 #include "globals.h"
+#include "config.h"
 #include "receiver.h"
 
 uint32_t btnPressedAt = 0xffffffff;
@@ -55,7 +56,7 @@ void duty100()
   // Code from here runs once per second
 
   // Update instrument readings
-  instrument.update(stgs.altitude, currTemp, currHumi, currPres);
+  instrument.update(Config::altitude, currTemp, currHumi, currPres);
 
   // Ping predictor to update its predictions
   predictor.update(currPres);

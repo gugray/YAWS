@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 #include <Ticker.h>
+#include "config.h"
 #include "duty100.h"
 #include "weather_loop.h"
 #include "server_loop.h"
@@ -12,7 +13,6 @@
 RH_ASK radio(2000, RADIO_RX_PIN, RADIO_TX_PIN);
 DOG7565R dog;
 
-Settings stgs;
 Instrument instrument;
 Canvas canvas;
 Predictor predictor;
@@ -37,8 +37,8 @@ enum Loops
 };
 
 Ticker ticker;
-// Loops currLoop = eWebServerLoop; // DBG
-Loops currLoop = eWeatherLoop; // DBG
+Loops currLoop = eWebServerLoop; // DBG
+// Loops currLoop = eWeatherLoop;
 
 void flushCanvasToDisplay()
 {
@@ -66,6 +66,8 @@ void setup()
   delay(500);
 
   fsOk = LittleFS.begin();
+
+  Config::load();
 
   // Input pins: photoresistor; button
   pinMode(PHOTO_RESISTOR_PIN, INPUT);

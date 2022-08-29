@@ -5,7 +5,6 @@
 #include <DOG7565R.h>
 #include <WiFiClientSecureBearSSL.h>
 #include <RH_ASK.h>
-#include "settings.h"
 #include "instrument.h"
 #include "predictor.h"
 #include "canvas.h"
@@ -28,7 +27,6 @@
 extern RH_ASK radio;
 extern DOG7565R dog;
 
-extern Settings stgs;
 extern Instrument instrument;
 extern Canvas canvas;
 extern Predictor predictor;
