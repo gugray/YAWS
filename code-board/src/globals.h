@@ -21,8 +21,7 @@
 
 #define BME_ADDR 0x76
 
-#define BUTTON_MSEC_START_SERVER 200 // Start web server if button's been pressed this long
-#define BUTTON_MSEC_STOP_SERVER 1000 // Quit running web server if button's been pressed this long
+#define BUTTON_MSEC_SERVER 200 // Start/stop web server if button's been pressed this long
 
 extern RH_ASK radio;
 extern DOG7565R dog;
@@ -30,7 +29,7 @@ extern DOG7565R dog;
 extern Instrument instrument;
 extern Canvas canvas;
 extern Predictor predictor;
-extern uint16_t buttonPressed; // Button has been pressed for this many msec
+extern int16_t buttonPressed; // Button has been pressed for this many msec. -1 if already handled.
 extern bool bmeOk;
 extern const size_t bufSize;
 extern char *buf;
@@ -38,7 +37,6 @@ extern char *buf;
 extern float currTemp;
 extern float currHumi;
 extern float currPres;
-extern int16_t currBrightness;
 extern float currExTemp;
 extern float currExBattery;
 

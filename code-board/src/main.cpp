@@ -16,7 +16,7 @@ DOG7565R dog;
 Instrument instrument;
 Canvas canvas;
 Predictor predictor;
-uint16_t buttonPressed = 0;
+int16_t buttonPressed = 0;
 bool bmeOk = false;
 bool fsOk = false;
 const size_t bufSize = 1024;
@@ -25,7 +25,6 @@ char *buf = new char[bufSize];
 float currTemp;
 float currHumi;
 float currPres;
-int16_t currBrightness;
 float currExTemp;
 float currExBattery;
 
@@ -37,8 +36,8 @@ enum Loops
 };
 
 Ticker ticker;
-Loops currLoop = eWebServerLoop; // DBG
-// Loops currLoop = eWeatherLoop;
+// Loops currLoop = eWebServerLoop; // DBG
+Loops currLoop = eWeatherLoop;
 
 void flushCanvasToDisplay()
 {
@@ -103,10 +102,11 @@ void loop()
   if (currLoop == eWeatherLoop)
   {
     // If button is pressed, start web server
-    if (buttonPressed >= BUTTON_MSEC_START_SERVER)
+    if (buttonPressed >= BUTTON_MSEC_SERVER)
     {
-      beginServer();
-      currLoop = eWebServerLoop;
+      buttonPressed = -1;
+      if (beginServer())
+        currLoop = eWebServerLoop;
       return;
     }
     // Do our normal weather station frame
@@ -116,8 +116,9 @@ void loop()
   else if (currLoop == eWebServerLoop)
   {
     // Upon long press, quit web server
-    if (buttonPressed >= BUTTON_MSEC_START_SERVER)
+    if (buttonPressed >= BUTTON_MSEC_SERVER)
     {
+      buttonPressed = -1;
       stopServer();
       currLoop = eWeatherLoop;
       return;

@@ -4,14 +4,22 @@
 #include "config.h"
 #include "receiver.h"
 
+#define MIN_BACKLIGHT_DUTY 48
+#define MAX_BACKLIGHT_DUTY 512
+#define LIGHTSENSOR_DARK_THRESHOLD 100
+#define LIGHTSENSOR_BRIGHT_THRESHOLD 700
+
 uint32_t btnPressedAt = 0xffffffff;
+uint16_t currBacklightDuty = 0;
 uint16_t duty100SecCounter = 0;
 
 void updateButton()
 {
   // Is button pressed? LOW is pressed (has pullup)
+  // Don't do any of this if button press has triggered some action already.
   auto btnVal = digitalRead(BUTTON_PIN);
-  if (btnVal == LOW)
+
+  if (btnVal == LOW && buttonPressed != -1)
   {
     auto currMillis = millis() & 0x7fffffff;
     if (btnPressedAt == 0xffffffff)
@@ -25,11 +33,35 @@ void updateButton()
     }
   }
   // Button is not pressed
-  else
+  else if (btnVal == HIGH)
   {
     btnPressedAt = 0xffffffff;
     buttonPressed = 0;
   }
+}
+
+void updateBacklight()
+{
+  uint32_t newBLDuty = 0;
+
+  auto light = analogRead(PHOTO_RESISTOR_PIN);
+  if (light < LIGHTSENSOR_DARK_THRESHOLD)
+    newBLDuty = MIN_BACKLIGHT_DUTY;
+  else if (light > LIGHTSENSOR_BRIGHT_THRESHOLD)
+    newBLDuty = MAX_BACKLIGHT_DUTY;
+  else
+  {
+    newBLDuty = MIN_BACKLIGHT_DUTY +
+      (light - LIGHTSENSOR_DARK_THRESHOLD) *
+      (MAX_BACKLIGHT_DUTY - MIN_BACKLIGHT_DUTY) /
+      (LIGHTSENSOR_BRIGHT_THRESHOLD - LIGHTSENSOR_DARK_THRESHOLD);
+  }
+
+  if (newBLDuty == currBacklightDuty)
+    return;
+  currBacklightDuty = (uint16_t)newBLDuty;
+  analogWrite(BACKLIGHT_PIN, currBacklightDuty);
+
 }
 
 void duty100()
@@ -38,10 +70,7 @@ void duty100()
   updateButton();
 
   // Check ambient light; adjust backlight
-  currBrightness = analogRead(PHOTO_RESISTOR_PIN);
-  // TODO: Adjust backlight
-  // float val = 1023.0F * (sin(cnt) + 1) / 2;
-  // analogWrite(TX, (int16_t)val);
+  updateBacklight();
 
   // Count cycles for duties we do once per second
   if (duty100SecCounter != 0)

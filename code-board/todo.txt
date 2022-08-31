@@ -1,25 +1,5 @@
-Initial proof-of-concepts
-OK Control MOSFET over TX
--- Read switch over RX
-OK Over-the-air update
-OK Talk to BME280E
-OK Read light
-OK Make display work
-
-Verify once parts are there
-OK Receive 433MHz (inverted pin!)
-OK Control backlight
--- 5V voltage regulator
-
-More to order:
-OK 12V power socket
-
-Dev while PCB manufactured:
--- Station UI and logic loop
--- WiFi access point server
--- WiFi client server; update from URL
-
-When PCB there:
--- Build electronics
--- Design and cut layered plexi frame
-
+Last steps
+-- Full cutout front; extra 1mm layer; stand
+-- Turn off WiFi when server stopped
+-- BME longer standby time
+-- Auto brightness

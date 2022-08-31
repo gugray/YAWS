@@ -1,3 +1,7 @@
+#ifndef SERVER_INDEX_H
+#define SERVER_INDEX_H
+
+const char text[] PROGMEM = R"(
 <!DOCTYPE html>
 <html>
 <head>
@@ -42,6 +46,7 @@
     updateReadings();
     getConfig();
     document.getElementById("btnSave").addEventListener("click", onSaveConfig);
+    document.getElementById("btnRestart").addEventListener("click", onRestart);
     document.getElementById("btnUpload").addEventListener("click", onUpload);
   });
 
@@ -58,6 +63,12 @@
     catch {
       document.getElementById("errGetConfig").style.display = "block";
     }
+  }
+
+  async function onRestart() {
+    await fetch("/restart", {
+      method: 'POST'
+    });
   }
 
   async function onSaveConfig() {
@@ -153,7 +164,7 @@
     <tr>
       <td class="left"></td>
       <td>
-        <p><button id="btnSave">Save changes</button></p>
+        <p><button id="btnSave">Save changes</button> <button id="btnRestart">Restart</button></p>
         <p class="error" id="errSaveConfig">Failed to save changes.</p>
         <p class="success" id="doneSaveConfig">Config changes saved.</p>
       </td>
@@ -181,3 +192,6 @@
 </main>
 </body>
 </html>
+)";
+
+#endif

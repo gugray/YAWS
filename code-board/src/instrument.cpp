@@ -9,7 +9,15 @@ Instrument::Instrument()
 
 bool Instrument::begin(uint8_t bmeAddr)
 {
-  return bme->begin(bmeAddr);
+  if (!bme->begin(bmeAddr))
+    return false;
+  bme->setSampling(Adafruit_BME280::MODE_NORMAL,
+    Adafruit_BME280::SAMPLING_X8,
+    Adafruit_BME280::SAMPLING_X8,
+    Adafruit_BME280::SAMPLING_X8,
+    Adafruit_BME280::FILTER_X8,
+    Adafruit_BME280::STANDBY_MS_500);
+  return true;
 }
 
 void Instrument::update(float altitude, float &temp, float &humi, float &pres)
