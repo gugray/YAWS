@@ -83,10 +83,15 @@ uint16_t weatherLoop()
   canvas.text(0, 30, Canvas::font30, true, buf);
 
   // Write secondary temperature
-  // sprintf(buf, "%5.1f*", -currTemp);
-  strcpy(buf, "--.-*");
+  sprintf(buf, "%5.1f*", currExTemp);
+  // strcpy(buf, "--.-*");
   uint8_t tempWidth = canvas.measureText(Canvas::font14, buf);
-  canvas.text(127 - tempWidth, 42, Canvas::font14, false, buf);
+  canvas.text(127 - tempWidth, 38, Canvas::font14, false, buf);
+
+  // Write external battery
+  sprintf(buf, "%5.2f", currExBattery);
+  uint8_t batteryWidth = canvas.measureText(Canvas::font5, buf);
+  canvas.text(100 - batteryWidth, 46, Canvas::font5, true, buf);
 
   sprintf(buf, "%d%%", (uint16_t)round(currHumi));
   uint16_t humiWidth = canvas.measureText(Canvas::font10, buf);

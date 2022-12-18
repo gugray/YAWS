@@ -70,7 +70,7 @@ void handleReadings()
 {
   StaticJsonDocument<jsonDocSize> doc;
   doc["temp"] = currTemp;
-  doc["pres"] = round(currPres);
+  doc["pres"] = currPres;
   doc["humi"] = round(currHumi);
   serializeJson(doc, buf, bufSize);
   server.send(200, "application/json", buf);
@@ -85,7 +85,8 @@ void handleRestart()
 void handleGetConfig()
 {
   StaticJsonDocument<jsonDocSize> doc;
-  doc["altitude"] = Config::altitude;
+  doc["ofsPres"] = Config::ofsPres;
+  doc["ofsTemp"] = Config::ofsTemp;
   serializeJson(doc, buf, bufSize);
   server.send(200, "application/json", buf);
 }
@@ -108,9 +109,12 @@ void handlePostConfig()
   }
   
   // Extract values from JSON permissively
-  auto jAltitude = doc["altitude"];
-  if (jAltitude)
-    Config::altitude = jAltitude.as<int16_t>();
+  auto jOfsPres = doc["ofsPres"];
+  if (jOfsPres)
+    Config::ofsPres = jOfsPres.as<float>();
+  auto jOfsTemp = doc["ofsTemp"];
+  if (jOfsTemp)
+    Config::ofsTemp = jOfsTemp.as<float>();
   
   // Save new values
   Config::save();
@@ -135,6 +139,7 @@ void processUpload()
     if (!uploadFile)
     {
       server.send(500, "text/plain", "Failed to create file in YAWS");
+      return;
     }
   }
   else if (upload.status == UPLOAD_FILE_WRITE)

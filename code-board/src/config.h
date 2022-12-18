@@ -3,7 +3,8 @@
 
 struct Config
 {
-  static int16_t altitude;
+  static float ofsPres;
+  static float ofsTemp;
 
   static void load();
 

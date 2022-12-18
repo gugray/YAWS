@@ -6,7 +6,8 @@
 const size_t jsonDocSize = 256;
 const char *fnConfigFile = "config.json";
 
-int16_t Config::altitude = 42;
+float Config::ofsPres = 0;
+float Config::ofsTemp = 0;
 
 void Config::load()
 {
@@ -21,16 +22,20 @@ void Config::load()
     return;
 
   // Extract values from JSON permissively
-  auto jAltitude = doc["altitude"];
-  if (jAltitude)
-    Config::altitude = jAltitude.as<int16_t>();
+  auto jOfsPres = doc["ofsPres"];
+  if (jOfsPres)
+    Config::ofsPres = jOfsPres.as<float>();
+  auto jOfsTemp = doc["ofsTemp"];
+  if (jOfsTemp)
+    Config::ofsTemp = jOfsTemp.as<float>();
 }
 
 void Config::save()
 {
   // Create and fill document
   StaticJsonDocument<jsonDocSize> doc;
-  doc["altitude"] = Config::altitude;
+  doc["ofsPres"] = Config::ofsPres;
+  doc["ofsTemp"] = Config::ofsTemp;
 
   // Serialize to file
   File f = LittleFS.open(fnConfigFile, "w");

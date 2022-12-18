@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 #include <Ticker.h>
+#include <radio/TinyRF_RX.h>
 #include "config.h"
 #include "duty100.h"
 #include "weather_loop.h"
@@ -10,7 +11,7 @@
 // https://wolles-elektronikkiste.de/433-mhz-funk-mit-dem-arduino
 
 // Definitions of shared objects declared in globals.h
-RH_ASK radio(2000, RADIO_RX_PIN, RADIO_TX_PIN);
+// RH_ASK radio(500, RADIO_RX_PIN, RADIO_TX_PIN, LED_BUILTIN);
 DOG7565R dog;
 
 Instrument instrument;
@@ -83,13 +84,13 @@ void setup()
   // This must come AFTER dog.initialize()
   // DOG uses SPI, which sets MISO pin as input
   // But we're hijacking it here for ourselves; no MISO needed by the dog
-  radio.init();
-  radio.setModeRx();
+  setupReceiver(RADIO_RX_PIN);
 
   // Initialize BME280 weather sensor
   bmeOk = instrument.begin(BME_ADDR);
 
   // Create ticker for 100-msec duty cycle that checks readings
+  initDuty100();
   ticker.attach_ms(100, duty100);
 
   // We're done, turn off LED
@@ -106,7 +107,11 @@ void loop()
     {
       buttonPressed = -1;
       if (beginServer())
+      {
         currLoop = eWebServerLoop;
+        // Must turn of interrupt handling for 433Mhz RX, or update install fails.
+        detachReceiver();
+      }
       return;
     }
     // Do our normal weather station frame
@@ -121,6 +126,8 @@ void loop()
       buttonPressed = -1;
       stopServer();
       currLoop = eWeatherLoop;
+      // Re-init interrupt handling for 433Mhz RX
+      setupReceiver(RADIO_RX_PIN);
       return;
     }
     // Do a web server frame

@@ -20,12 +20,16 @@ bool Instrument::begin(uint8_t bmeAddr)
   return true;
 }
 
-void Instrument::update(float altitude, float &temp, float &humi, float &pres)
+void Instrument::update(float ofsPres, float ofsTemp,
+  float &temp, float &humi, float &pres)
 {
   float xtemp = bme->readTemperature();
+  xtemp += ofsTemp;
   float xhumi = bme->readHumidity();
   float xpres = bme->readPressure();
-  xpres = xpres / pow((1 - altitude / 44330), 5.255) / 100;
+  xpres /= 100.0F;
+  xpres += ofsPres;
+  // xpres = xpres / pow((1 - altitude / 44330), 5.255) / 100;
 
   // We keep 6 readings. Public values are calculated by
   // throwing away highest and lowest, and taking the average of the rest.

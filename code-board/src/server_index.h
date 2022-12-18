@@ -57,7 +57,8 @@ const char text[] PROGMEM = R"(
       });
       if (response.status != 200) throw "up";
       let data = await response.json();
-      document.getElementById("txtAltitude").setAttribute("value", data.altitude);
+      document.getElementById("txtPressureAdjust").setAttribute("value", data.ofsPres);
+      document.getElementById("txtTempAdjust").setAttribute("value", data.ofsTemp);
       document.getElementById("errGetConfig").style.display = "none";
     }
     catch {
@@ -74,17 +75,23 @@ const char text[] PROGMEM = R"(
   async function onSaveConfig() {
     document.getElementById("doneSaveConfig").style.display = "none";
     let valuesOk = true;
-    let vAltitude = parseInt(document.getElementById("txtAltitude").value);
-    if (isNaN(vAltitude)) {
-      document.getElementById("errAltitude").style.display = "block";
+    let vOfsPres = Number.parseFloat(document.getElementById("txtPressureAdjust").value);
+    if (Number.isNaN(vOfsPres)) {
+      document.getElementById("errPressureAdjust").style.display = "block";
       valuesOk = false;
     }
-    else
-      document.getElementById("errAltitude").style.display = "none";
+    else document.getElementById("errPressureAdjust").style.display = "none";
+    let vOfsTemp = Number.parseFloat(document.getElementById("txtTempAdjust").value);
+    if (Number.isNaN(vOfsTemp)) {
+      document.getElementById("errTempAdjust").style.display = "block";
+      valuesOk = false;
+    }
+    else document.getElementById("errTempAdjust").style.display = "none";
     if (!valuesOk)
       return;
     let config = {
-      altitude: vAltitude,
+      ofsPres: vOfsPres,
+      ofsTemp: vOfsTemp,
     };
     try {
       const response = await fetch("/config", {
@@ -108,7 +115,7 @@ const char text[] PROGMEM = R"(
     if (response.status == 200) {
       try {
         let data = await response.json();
-        document.getElementById("pres").innerText = data.pres + " hPa";
+        document.getElementById("pres").innerText = Math.round(data.pres * 10) / 10 + " hPa";
         document.getElementById("humi").innerText = data.humi + "%";
         document.getElementById("temp").innerText = Math.round(data.temp * 10) / 10 + "°C";
         gotReadings = true;
@@ -155,16 +162,23 @@ const char text[] PROGMEM = R"(
   <p class="error" id="errGetConfig">Failed to load configuration from YAWS. Please try reloading the page.</p>
   <table>
     <tr valign="top">
-      <td class="left">Altitude above sea level:</td>
+      <td class="left">Pressure adjust:</td>
       <td>
-        <p><input type="text" id="txtAltitude"> m</p>
-        <p class="error" id="errAltitude">Must be an integer number.</p>
+        <p><input type="text" id="txtPressureAdjust"> hPa</p>
+        <p class="error" id="errPressureAdjust">Must be a number.</p>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td class="left">Temperature adjust:</td>
+      <td>
+        <p><input type="text" id="txtTempAdjust"> °C</p>
+        <p class="error" id="errTempAdjust">Must be a number.</p>
       </td>
     </tr>
     <tr>
       <td class="left"></td>
       <td>
-        <p><button id="btnSave">Save changes</button> <button id="btnRestart">Restart</button></p>
+        <p><button id="btnSave">Save changes</button></p>
         <p class="error" id="errSaveConfig">Failed to save changes.</p>
         <p class="success" id="doneSaveConfig">Config changes saved.</p>
       </td>
@@ -188,7 +202,13 @@ const char text[] PROGMEM = R"(
       </td>
     </tr>
   </table>
-
+  <h2>Restart YAWS</h2>
+  <p>
+    You can restart YAWS from this page. That will exit the web server mode and return to
+    the weather station display.
+    <br/><br/>
+    <button id="btnRestart">Restart</button>
+  </p>
 </main>
 </body>
 </html>

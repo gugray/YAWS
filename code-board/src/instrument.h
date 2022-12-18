@@ -21,7 +21,7 @@ private:
 public:
   Instrument();
   bool begin(uint8_t bmeAddr);
-  void update(float altitude, float &temp, float &humi, float &pres);
+  void update(float ofsPres, float ofsTemp, float &temp, float &humi, float &pres);
 };
 
 #endif

@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <DOG7565R.h>
 #include <WiFiClientSecureBearSSL.h>
-#include <RH_ASK.h>
+// #include <RH_ASK.h>
 #include "instrument.h"
 #include "predictor.h"
 #include "canvas.h"
@@ -23,7 +23,7 @@
 
 #define BUTTON_MSEC_SERVER 200 // Start/stop web server if button's been pressed this long
 
-extern RH_ASK radio;
+// extern RH_ASK radio;
 extern DOG7565R dog;
 
 extern Instrument instrument;
