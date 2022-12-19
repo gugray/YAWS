@@ -2,18 +2,10 @@
 #define TRF_SETTINGS_H
 
 
-
 /**
  * IMPORTANT: FOR SETTINGS THAT HAVE MULTIPLE OPTIONS ONLY ONE OPTION CAN BE ENABLED AT A TIME
  * MEANING IF YOU UNCOMMENT AN OPTION YOU HAVE TO COMMENT OUT ALL THE OTHER OPTIONS!
 **/
-
-
-
-/**
- * The pin that is connected to the transmission module.
-**/
-#define TRF_TX_PIN 2
 
 
 /**
@@ -28,16 +20,6 @@
 #define TRF_ERROR_CHECKING_CRC
 //#define TRF_ERROR_CHECKING_CHECKSUM
 //#define TRF_ERROR_CHECKING_NONE
-
-
-/**
- * Whether sequence numbering should be disabled.
- * It is enabled by default. Uncomment the below define to disable it.
- * If enabled, a sequence number will be attached to every message sent. In the receiver 
- * the sequence number will be checked to determine if any messages have been lost inbetween.
- * The sequence number resets at 255 so if there's more than 255 messages lost we won't find out.
-**/
-#define TRF_SEQ_DISABLED
 
 
 /**

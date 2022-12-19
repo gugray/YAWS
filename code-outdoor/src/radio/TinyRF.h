@@ -1,30 +1,8 @@
-#ifndef TRF_H
-#define TRF_H
+#ifndef TINYRF_H
+#define TINYRF_H
 
-#include "Arduino.h"
-#include "Settings.h"
-
-//#define DEBUG
-
-// //enable serial output if board is not ATtiny13
-// //used for developement debugging
-// #ifndef __AVR_ATtiny13__
-// 	#define TRF_SERIAL_ENABLE
-// #endif
-
-
-#if defined(TRF_SERIAL_ENABLE) && defined(DEBUG)
-	#define TRF_SERIAL_BEGIN(x) (Serial.begin(x))
-	#define TRF_PRINTLN(x) (Serial.println(x))
-	#define TRF_PRINT(x) (Serial.print(x))
-	#define TRF_PRINT2(x,y) (Serial.print(x,y))
-#else
-	#define TRF_SERIAL_BEGIN(x)
-	#define TRF_PRINTLN(x)
-	#define TRF_PRINT(x)
-	#define TRF_PRINT2(x,y)
-#endif
-
+#include <Arduino.h>
+#include "TinyRF_Settings.h"
 
 #if defined(TRF_TX_UNCALIBRATED)
 	#define TRF_CALIB_ERROR 10
@@ -120,4 +98,5 @@ byte checksum8(byte data[], uint8_t len, uint8_t seq = 0);
 byte crc8(byte data[], uint8_t len, uint8_t seq = 0);
 
 
-#endif  /* TRF_H */ 
+#endif
+

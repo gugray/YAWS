@@ -116,5 +116,8 @@ void duty100()
   predictor.update(currPres);
 
   // Receive radio
-  receiveRadio(currExTemp, currExBattery);
+  if (receiveRadio(currExTemp, currExBattery))
+    secSinceExData = 0;
+  else if (secSinceExData < 65335)
+    ++secSinceExData;
 }

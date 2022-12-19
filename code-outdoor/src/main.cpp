@@ -3,7 +3,9 @@
 #include "onewire/OneWire.h"
 #include "sleep.h"
 
-#define LED_PIN 4
+// Sleep this many times 8 sec between broadcasts
+#define PERIOD_8SEC 40
+
 #define RADIO_TX_PIN 2
 #define RADIO_PWR_PIN 3
 #define DS18B20_PIN 1
@@ -44,16 +46,11 @@ void measureVCC()
   while (bit_is_set(ADCSRA,ADSC)); // measuring
   uint8_t low  = ADCL; // must read ADCL first - it then locks ADCH 
   uint8_t high = ADCH; // unlocks both
-  // // Convert again!
-  // ADCSRA |= _BV(ADSC); // Start conversion
-  // while (bit_is_set(ADCSRA,ADSC)); // measuring
-  // low  = ADCL; // must read ADCL first - it then locks ADCH 
-  // high = ADCH; // unlocks both
   
   uint32_t val = (high<<8) | low;  
-  //val = (uint32_t)(1024) * 110 / val; // Calculate Vcc (times 100, ie 320 for 3.2V); 112640 = 1.1*1024*100
+  val = (uint32_t)(1024) * 110 / val; // Calculate Vcc (times 100, ie 317 for 3.17V); 112640 = 1.1*1024*100
   // Empirical correction BARGH ~ 0.96
-  val = (uint32_t)(985) * 110 / val;
+  // val = (uint32_t)(985) * 110 / val;
   
   // Write to TX data
   uint16_t uvcc = val;
@@ -103,15 +100,8 @@ void readTemp()
 
 void setup()
 {
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, HIGH);
-  delay(500);
-
   pinMode(RADIO_PWR_PIN, OUTPUT);
-  setupTransmitter();
-
-  digitalWrite(LED_PIN, LOW);
-  delay(500);
+  setupTransmitter(RADIO_TX_PIN);
 }
 
 void loop()
@@ -132,6 +122,9 @@ void loop()
   send((byte*)&txData, sizeof(TXData));
   digitalWrite(RADIO_PWR_PIN, LOW);
 
-  // Back to sleep
-  sleep(8, true);
+  // Back to a long, deep sleep
+  for (uint16_t n = 0; n < PERIOD_8SEC; ++n)
+  {
+    sleep(9, true);
+  }
 }

@@ -1,8 +1,8 @@
 #ifndef TRF_H
 #define TRF_H
 
-#include "Arduino.h"
-#include "Settings.h"
+#include <Arduino.h>
+#include "TinyRF_Settings.h"
 
 //#define DEBUG
 

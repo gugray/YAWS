@@ -15,6 +15,7 @@ struct Canvas
     font10,
     font14,
     font30,
+    font30N,
     wicons18,
     arrows14,
   };
@@ -38,6 +39,8 @@ struct Canvas
   void line(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
 
   void box(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool on);
+
+  void addStatic(uint8_t x, uint8_t y, uint8_t w, uint8_t h, float propToClear);
 
 private:
   static Font *getFont(Fonts font);

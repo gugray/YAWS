@@ -1,19 +1,11 @@
-#ifndef TRF_SETTINGS_H
-#define TRF_SETTINGS_H
-
+#ifndef TINYRF_SETTINGS_H
+#define TINYRF_SETTINGS_H
 
 
 /**
  * IMPORTANT: FOR SETTINGS THAT HAVE MULTIPLE OPTIONS ONLY ONE OPTION CAN BE ENABLED AT A TIME
  * MEANING IF YOU UNCOMMENT AN OPTION YOU HAVE TO COMMENT OUT ALL THE OTHER OPTIONS!
 **/
-
-
-
-/**
- * The pin that is connected to the transmission module.
-**/
-#define TRF_TX_PIN 2
 
 
 /**
@@ -28,16 +20,6 @@
 #define TRF_ERROR_CHECKING_CRC
 //#define TRF_ERROR_CHECKING_CHECKSUM
 //#define TRF_ERROR_CHECKING_NONE
-
-
-/**
- * Whether sequence numbering should be disabled.
- * It is enabled by default. Uncomment the below define to disable it.
- * If enabled, a sequence number will be attached to every message sent. In the receiver 
- * the sequence number will be checked to determine if any messages have been lost inbetween.
- * The sequence number resets at 255 so if there's more than 255 messages lost we won't find out.
-**/
-#define TRF_SEQ_DISABLED
 
 
 /**
@@ -73,20 +55,6 @@
 
 
 /**
- * Receiver buffer size
- * It's a circular FIFO buffer
- * When buffer is full it will start from the beggining, rewriting data regardless of it being read or not
- * The size of the buffer depends on how much RAM you have available, how big your messages are,
- * how frequently you send them and how frequently you call getReceivedData() in your receiver code
- * Note that when you use sendMulti() all of the messages will be stored in buffer until read with getReceivedData()
- * How to calculate: 
- * minimum buffer size = (message length + 3) * repetition
- * So if you wanna do sendMulti("hello", 5, 2) you're gonna need (5 + 3) * 2 = 16 bytes of buffer
-**/
-#define TRF_RX_BUFFER_SIZE 128
-
-
-/**
  * [ You probably don't want to change this ]
  * We don't have a specific pulse that signals the end of a transmission. 
  * We rely on 1- noise and 2- message length for that.
@@ -111,5 +79,4 @@
 //#define TRF_EOT_NONE
 
 
-
-#endif	/* TRF_SETTINGS_H */
+#endif

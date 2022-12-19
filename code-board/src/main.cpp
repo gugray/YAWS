@@ -11,7 +11,6 @@
 // https://wolles-elektronikkiste.de/433-mhz-funk-mit-dem-arduino
 
 // Definitions of shared objects declared in globals.h
-// RH_ASK radio(500, RADIO_RX_PIN, RADIO_TX_PIN, LED_BUILTIN);
 DOG7565R dog;
 
 Instrument instrument;
@@ -28,6 +27,7 @@ float currHumi;
 float currPres;
 float currExTemp;
 float currExBattery;
+uint16_t secSinceExData = 65535;
 
 // Used in main only
 enum Loops

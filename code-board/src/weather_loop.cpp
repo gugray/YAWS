@@ -78,20 +78,45 @@ uint16_t weatherLoop()
 {
   canvas.clear();
 
-  // Write temperature in big digits
-  sprintf(buf, "%5.1f*", currTemp);
-  canvas.text(0, 30, Canvas::font30, true, buf);
+  // Temperature in big digits: external if recent data exists; internal otherwise
+  bool gotExternalData = secSinceExData < EXDATA_MAX_WAIT_SEC;
+  if (gotExternalData)
+  {
+    sprintf(buf, "%5.1f*", currExTemp);
+    // Outline font for negative values
+    if (currExTemp >= 0)
+      canvas.text(0, 30, Canvas::font30, true, buf);
+    else if (currExTemp > -10.0F)
+      canvas.text(0, 30, Canvas::font30N, true, buf);
+    else
+    {
+      // No minus sign for two-digit negative values
+      sprintf(buf, "%5.1f*", -currExTemp);
+      canvas.text(0, 30, Canvas::font30N, true, buf);
+    }
+    canvas.addStatic(0, 0, 92, 30, (float)secSinceExData / (float)EXDATA_MAX_WAIT_SEC);
+  }
+  else
+  {
+    // Internal temperature
+    sprintf(buf, "%5.1f*", currTemp);
+    canvas.text(0, 30, Canvas::font30, true, buf);
+  }
 
-  // Write secondary temperature
-  sprintf(buf, "%5.1f*", currExTemp);
-  // strcpy(buf, "--.-*");
-  uint8_t tempWidth = canvas.measureText(Canvas::font14, buf);
-  canvas.text(127 - tempWidth, 38, Canvas::font14, false, buf);
+  // If we got data fron external sensor: small temperature is indoor; show battery voltage
+  if (gotExternalData)
+  {
+    // Write secondary (small) temperature
+    sprintf(buf, "%5.1f*", currTemp);
+    // strcpy(buf, "--.-*");
+    uint8_t tempWidth = canvas.measureText(Canvas::font14, buf);
+    canvas.text(127 - tempWidth, 38, Canvas::font14, false, buf);
 
-  // Write external battery
-  sprintf(buf, "%5.2f", currExBattery);
-  uint8_t batteryWidth = canvas.measureText(Canvas::font5, buf);
-  canvas.text(100 - batteryWidth, 46, Canvas::font5, true, buf);
+    // Write external battery
+    sprintf(buf, "%1.2fv", currExBattery);
+    uint8_t batteryWidth = canvas.measureText(Canvas::font5, buf);
+    canvas.text(102 - batteryWidth, 46, Canvas::font5, true, buf);
+  }
 
   sprintf(buf, "%d%%", (uint16_t)round(currHumi));
   uint16_t humiWidth = canvas.measureText(Canvas::font10, buf);
