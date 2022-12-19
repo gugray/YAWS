@@ -1,0 +1,4 @@
+This schematic misses a pullup resistor on the
+temperature sensor's data wire!
+
+Do not use. Refer to a later version.
