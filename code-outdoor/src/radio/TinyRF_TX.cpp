@@ -7,7 +7,6 @@ uint8_t txPin = 0xff;
 void setupTransmitter(uint8_t pin)
 {
 	txPin = pin;
-	pinMode(txPin, OUTPUT);
 }
 
 void transmitByte(byte _byte);
