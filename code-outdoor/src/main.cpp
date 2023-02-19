@@ -3,6 +3,8 @@
 #include "onewire/OneWire.h"
 #include "sleep.h"
 
+// TODO: Verify at 1Mhz, or update VCC conversion code
+
 /*
 Transmitter: At 3.3V
 TX data GND (via 10k): real 0
@@ -72,23 +74,59 @@ void enableADC()
 
 void measureVCC()
 {
-  // Read 1.1V reference against AVcc
-  ADMUX = _BV(MUX3) | _BV(MUX2);
-  delay(2); // Wait for Vref to settle
-  ADCSRA |= _BV(ADSC); // Start conversion
-  while (bit_is_set(ADCSRA,ADSC)); // measuring
-  uint8_t low  = ADCL; // must read ADCL first - it then locks ADCH 
-  uint8_t high = ADCH; // unlocks both
-  
-  uint32_t val = (high<<8) | low;  
-  // val = (uint32_t)(1024) * 110 / val; // Calculate Vcc (times 100, ie 317 for 3.17V); 112640 = 1.1*1024*100
-  // Empirical correction BARGH ~ 0.96
-  val = (uint32_t)(985) * 110 / val;
-  
-  // Write to TX data
-  uint16_t uvcc = val;
+  // get_vcc_ext uses the internal reference 1.1V and measures voltage on a pin
+  // Pin has a 1M resistor to battery voltage and 100k resistor to ground
+  // Ie pin has 0.090909 times battery voltage, getting compared to 1.1V
+
+  ADCSRA |= 0b110;  // Prescaler: 64 -> 15kHz @1MHz
+  ADMUX = _BV(MUX1) | _BV(MUX0) | _BV(REFS1); // ADC3 on PB3, which is pin 3; against 1.1V internal reference
+
+  // Conversion takes 25 cycles when first enabled (13 afterwards)
+  // Even at low ADC clock of 15kHz, that can no way be longer than 2msec
+  // Count every 0.01msec = 10 micros up to 255; then, abandon
+  uint8_t waitCount = 0;
+  ADCSRA |= _BV(ADSC); // Convert
+  while (bit_is_set(ADCSRA, ADSC) && waitCount != 0xff)
+  {
+    delayMicroseconds(100);
+    ++waitCount;
+  }
+  // Conversion didn't complete in time
+  if (waitCount == 0xff)
+  {
+    uint16_t dummy_vcc = 999;
+    txData.vccLo = (dummy_vcc & 0xff);
+    txData.vccHi = (dummy_vcc >> 8);
+    return;
+  }
+
+  // Read value
+  uint8_t low = ADCL;
+  uint32_t val = (ADCH << 8) | low;
+
+  // we return voltage * 100
+  uint32_t uvcc = val * 7559 / 16384;
   txData.vccLo = (uvcc & 0xff);
   txData.vccHi = (uvcc >> 8);
+
+
+  // // Read 1.1V reference against AVcc
+  // ADMUX = _BV(MUX3) | _BV(MUX2);
+  // delay(2); // Wait for Vref to settle
+  // ADCSRA |= _BV(ADSC); // Start conversion
+  // while (bit_is_set(ADCSRA,ADSC)); // measuring
+  // uint8_t low  = ADCL; // must read ADCL first - it then locks ADCH 
+  // uint8_t high = ADCH; // unlocks both
+  
+  // uint32_t val = (high<<8) | low;  
+  // // val = (uint32_t)(1024) * 110 / val; // Calculate Vcc (times 100, ie 317 for 3.17V); 112640 = 1.1*1024*100
+  // // Empirical correction BARGH ~ 0.96
+  // val = (uint32_t)(985) * 110 / val;
+  
+  // // Write to TX data
+  // uint16_t uvcc = val;
+  // txData.vccLo = (uvcc & 0xff);
+  // txData.vccHi = (uvcc >> 8);
 }
 
 
@@ -109,10 +147,6 @@ void readTemp()
 
   // TODO:
   ds.depower();
-
-  // TODO schematic:
-  // -- control GND of sensor for PWR
-  // -- TX DATA pull-down resistor
 
   // Convert the data to actual temperature
   int16_t raw = (dsData[1] << 8) | dsData[0]; // default is 12 bit resolution

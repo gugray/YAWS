@@ -1,2 +1,0 @@
-- Battery footprint is wrong (two connections at one end)
-- Place new resistor
